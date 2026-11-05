@@ -1,0 +1,137 @@
+import SwiftUI
+
+struct CheckInView: View {
+    @EnvironmentObject private var checkInStore: CheckInStore
+    @State private var mood = "괜찮아요"
+    @State private var stress = "보통"
+    @State private var caffeine = false
+
+    private let moods = ["개운해요", "괜찮아요", "피곤해요"]
+    private let stressOptions = ["낮음", "보통", "높음"]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text("아침 체크인")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                        Text("몇 번의 선택으로 수면과 하루를 연결해요.")
+                            .font(.subheadline)
+                            .foregroundStyle(JammanboPalette.muted)
+                    }
+
+                    SoftCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            sectionTitle("지금 기분은 어때요?", icon: "face.smiling")
+                            choiceRow(options: moods, selection: $mood)
+                        }
+                    }
+
+                    SoftCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            sectionTitle("어제의 생활 맥락", icon: "sun.max")
+                            Text("스트레스")
+                                .font(.caption)
+                                .foregroundStyle(JammanboPalette.muted)
+                            choiceRow(options: stressOptions, selection: $stress)
+                            Toggle(isOn: $caffeine) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("오후에 카페인을 마셨어요")
+                                        .font(.subheadline.weight(.medium))
+                                    Text("커피, 차, 에너지 음료")
+                                        .font(.caption)
+                                        .foregroundStyle(JammanboPalette.muted)
+                                }
+                            }
+                            .tint(JammanboPalette.accent)
+                        }
+                    }
+
+                    Button {
+                        checkInStore.saveFromPhone(mood: mood, stress: stress, caffeine: caffeine)
+                    } label: {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                            Text("오늘 체크인 저장")
+                        }
+                        .font(.headline)
+                        .foregroundStyle(JammanboPalette.background)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 17)
+                        .background(JammanboPalette.accent, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "applewatch")
+                        Text(checkInStore.connectionLabel)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(JammanboPalette.muted)
+                    .frame(maxWidth: .infinity)
+
+                    if !checkInStore.records.isEmpty {
+                        recordsCard
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 18)
+                .padding(.bottom, 32)
+            }
+            .background(JammanboPalette.background.ignoresSafeArea())
+            .toolbar(.hidden, for: .navigationBar)
+        }
+    }
+
+    private var recordsCard: some View {
+        SoftCard {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("최근 체크인")
+                    .font(.headline)
+                ForEach(checkInStore.records.prefix(4)) { record in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("\(record.mood) · 스트레스 \(record.stress)")
+                                .font(.subheadline.weight(.medium))
+                            Text(record.date.formatted(.dateTime.month(.abbreviated).day().hour().minute()) + " · " + record.source)
+                                .font(.caption)
+                                .foregroundStyle(JammanboPalette.muted)
+                        }
+                        Spacer()
+                        if record.caffeine {
+                            Text("카페인")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(JammanboPalette.coral)
+                        }
+                    }
+                    if record.id != checkInStore.records.prefix(4).last?.id { Divider().overlay(.white.opacity(0.1)) }
+                }
+            }
+        }
+    }
+
+    private func sectionTitle(_ title: String, icon: String) -> some View {
+        Label(title, systemImage: icon)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(JammanboPalette.accent)
+    }
+
+    private func choiceRow(options: [String], selection: Binding<String>) -> some View {
+        HStack(spacing: 8) {
+            ForEach(options, id: \.self) { option in
+                Button {
+                    selection.wrappedValue = option
+                } label: {
+                    Text(option)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(selection.wrappedValue == option ? JammanboPalette.background : .white.opacity(0.84))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 11)
+                        .background(selection.wrappedValue == option ? JammanboPalette.accent : JammanboPalette.raised, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}

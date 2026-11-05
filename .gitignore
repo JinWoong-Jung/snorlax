@@ -1,0 +1,28 @@
+.DS_Store
+/9주차/
+/.codex-build/
+/.jammanbo-git-metadata/
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.ipa
+*.app/
+
+# Secrets and environment files
+.env
+.env.*
+!.env.example
+Secrets/
+
+# Raw or identifiable participant data
+data/raw/
+data/identifiable/
+docs/user-test/raw/
+*인터뷰*.docx
+
+# Large recordings are stored outside Git; keep only the submission link
+*.mov
+*.mp4
