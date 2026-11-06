@@ -18,6 +18,7 @@ struct PlanView: View {
     @State private var eventTitle = ""
     @State private var eventTime = Date.now
     @State private var events = PlanView.loadEvents()
+    @FocusState private var eventTitleFocused: Bool
 
     private var wakeTime: Date {
         var components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
@@ -90,6 +91,9 @@ struct PlanView: View {
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(JammanboPalette.accent)
                             TextField("예: 저녁 운동", text: $eventTitle)
+                                .focused($eventTitleFocused)
+                                .submitLabel(.done)
+                                .onSubmit { eventTitleFocused = false }
                                 .padding(12)
                                 .background(JammanboPalette.raised, in: RoundedRectangle(cornerRadius: 13))
                             HStack {
@@ -99,7 +103,10 @@ struct PlanView: View {
                                 DatePicker("일정 시간", selection: $eventTime, displayedComponents: [.date, .hourAndMinute])
                                     .labelsHidden()
                             }
-                            Button(action: addEvent) {
+                            Button {
+                                eventTitleFocused = false
+                                addEvent()
+                            } label: {
                                 Label("일정 추가", systemImage: "plus.circle.fill")
                                     .font(.subheadline.weight(.semibold))
                                     .frame(maxWidth: .infinity)
@@ -139,8 +146,17 @@ struct PlanView: View {
                 .padding(.top, 18)
                 .padding(.bottom, 32)
             }
+            .scrollDismissesKeyboard(.interactively)
             .background(JammanboPalette.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
+        }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("완료") {
+                    eventTitleFocused = false
+                }
+            }
         }
     }
 

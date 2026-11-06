@@ -7,6 +7,7 @@ struct WatchHomeView: View {
     @State private var caffeine = false
 
     private let moods = ["개운해요", "괜찮아요", "피곤해요"]
+    private let stressOptions = ["낮음", "보통", "높음"]
 
     var body: some View {
         ScrollView {
@@ -58,14 +59,25 @@ struct WatchHomeView: View {
                     .buttonStyle(.plain)
                 }
 
-                Button {
-                    stress = stress == "높음" ? "보통" : "높음"
-                } label: {
-                    Label("스트레스 \(stress)", systemImage: "brain.head.profile")
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("스트레스", systemImage: "brain.head.profile")
                         .font(.caption2.weight(.medium))
-                        .frame(maxWidth: .infinity)
+                        .foregroundStyle(.white.opacity(0.78))
+                    HStack(spacing: 4) {
+                        ForEach(stressOptions, id: \.self) { choice in
+                            Button {
+                                stress = choice
+                            } label: {
+                                Text(choice)
+                                    .font(.system(size: 10, weight: .medium))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 7)
+                                    .background(stress == choice ? Color.orange : Color.white.opacity(0.09), in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
                 }
-                .tint(stress == "높음" ? .orange : .gray)
 
                 Button {
                     caffeine.toggle()

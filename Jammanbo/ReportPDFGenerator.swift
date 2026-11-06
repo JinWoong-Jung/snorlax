@@ -5,7 +5,7 @@ enum ReportPDFGenerator {
     static func create(nights: [SleepNight], checkIns: [CheckIn], source: String) throws -> URL {
         let page = CGRect(x: 0, y: 0, width: 595, height: 842)
         let renderer = UIGraphicsPDFRenderer(bounds: page)
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Jammanbo-Sleep-Summary.pdf")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Jammanbo-Sleep-Summary-\(UUID().uuidString).pdf")
         let data = renderer.pdfData { context in
             context.beginPage()
             let ink = UIColor(red: 0.10, green: 0.15, blue: 0.25, alpha: 1)
@@ -30,7 +30,18 @@ enum ReportPDFGenerator {
                 let date = night.date.formatted(.dateTime.year().month(.abbreviated).day())
                 draw(date, at: CGPoint(x: 48, y: y), font: .systemFont(ofSize: 12), color: ink)
                 draw(night.durationLabel, at: CGPoint(x: 230, y: y), font: .systemFont(ofSize: 12, weight: .semibold), color: ink)
-                draw("깊은 잠 \(night.deepMinutes / 60)h \(night.deepMinutes % 60)m  ·  렘수면 \(night.remMinutes / 60)h \(night.remMinutes % 60)m", at: CGPoint(x: 355, y: y), font: .systemFont(ofSize: 9), color: secondary)
+                let stageText: String
+                if night.hasDetailedStages {
+                    var stages: [String] = []
+                    if night.hasDeepStageData { stages.append("깊은 \(minutesLabel(night.deepMinutes))") }
+                    if night.hasRemStageData { stages.append("렘 \(minutesLabel(night.remMinutes))") }
+                    if night.hasCoreStageData { stages.append("얕은 \(minutesLabel(night.coreMinutes))") }
+                    if night.unclassifiedMinutes > 0 { stages.append("미분류 \(minutesLabel(night.unclassifiedMinutes))") }
+                    stageText = stages.joined(separator: " · ")
+                } else {
+                    stageText = "수면 단계 미제공"
+                }
+                draw(stageText, at: CGPoint(x: 355, y: y), font: .systemFont(ofSize: 8), color: secondary)
                 context.cgContext.setStrokeColor(UIColor(white: 0.87, alpha: 1).cgColor)
                 context.cgContext.move(to: CGPoint(x: 48, y: y + 21))
                 context.cgContext.addLine(to: CGPoint(x: 547, y: y + 21))
@@ -38,7 +49,7 @@ enum ReportPDFGenerator {
                 y += 34
             }
 
-            draw("이 문서는 사용자가 기록한 건강 정보를 정리한 참고 자료입니다. 진단서가 아니며 질환의 진단이나 치료를 대신하지 않습니다.", at: CGPoint(x: 48, y: 758), font: .systemFont(ofSize: 10), color: secondary)
+            draw("이 자료는 수면 기록 요약이며 진단서가 아닙니다. 질환의 진단이나 치료를 대신하지 않습니다.", at: CGPoint(x: 48, y: 758), font: .systemFont(ofSize: 10), color: secondary)
         }
         try data.write(to: url, options: .atomic)
         return url
@@ -46,5 +57,9 @@ enum ReportPDFGenerator {
 
     private static func draw(_ text: String, at point: CGPoint, font: UIFont, color: UIColor) {
         (text as NSString).draw(at: point, withAttributes: [.font: font, .foregroundColor: color])
+    }
+
+    private static func minutesLabel(_ minutes: Int) -> String {
+        "\(minutes / 60)h \(minutes % 60)m"
     }
 }

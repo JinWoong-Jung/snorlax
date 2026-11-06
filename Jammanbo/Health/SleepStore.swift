@@ -49,7 +49,12 @@ final class SleepStore: ObservableObject {
                         return
                     }
                     if error == nil, let samples = samples as? [HKCategorySample] {
-                        let fetchedNights = Self.makeNights(from: samples)
+                        let calendar = Calendar.current
+                        let startOfToday = calendar.startOfDay(for: .now)
+                        let firstRecentDay = calendar.date(byAdding: .day, value: -6, to: startOfToday) ?? .distantPast
+                        let fetchedNights = Self.makeNights(from: samples).filter {
+                            $0.date >= firstRecentDay && $0.date <= startOfToday
+                        }
                         if fetchedNights.isEmpty {
                             self.nights = SleepNight.sampleNights()
                             self.sourceLabel = "샘플 기록 · 건강 앱에 수면 데이터가 없음"
@@ -76,22 +81,29 @@ final class SleepStore: ObservableObject {
             var deep = 0
             var rem = 0
             var core = 0
+            var unclassified = 0
+            var hasDeep = false
+            var hasRem = false
+            var hasCore = false
             for sample in daySamples {
                 let minutes = max(0, Int(sample.endDate.timeIntervalSince(sample.startDate) / 60))
                 switch sample.value {
                 case HKCategoryValueSleepAnalysis.asleepDeep.rawValue:
                     deep += minutes
+                    hasDeep = true
                 case HKCategoryValueSleepAnalysis.asleepREM.rawValue:
                     rem += minutes
+                    hasRem = true
                 case HKCategoryValueSleepAnalysis.asleepCore.rawValue:
                     core += minutes
+                    hasCore = true
                 case HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue:
-                    core += minutes
+                    unclassified += minutes
                 default:
                     break
                 }
             }
-            let total = deep + rem + core
+            let total = deep + rem + core + unclassified
             guard total > 0 else { return nil }
             return SleepNight(
                 id: day,
@@ -100,6 +112,10 @@ final class SleepStore: ObservableObject {
                 deepMinutes: deep,
                 remMinutes: rem,
                 coreMinutes: core,
+                unclassifiedMinutes: unclassified,
+                hasDeepStageData: hasDeep,
+                hasRemStageData: hasRem,
+                hasCoreStageData: hasCore,
                 isSample: false
             )
         }

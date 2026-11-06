@@ -2,13 +2,25 @@ import Foundation
 import WatchConnectivity
 
 private struct WatchCheckIn: Codable {
+    let id: UUID
     let timestamp: Double
     let mood: String
     let stress: String
     let caffeine: Bool
 
     var transferPayload: [String: Any] {
-        ["timestamp": timestamp, "mood": mood, "stress": stress, "caffeine": caffeine]
+        ["id": id.uuidString, "timestamp": timestamp, "mood": mood, "stress": stress, "caffeine": caffeine]
+    }
+}
+
+private struct LegacyWatchCheckIn: Decodable {
+    let timestamp: Double
+    let mood: String
+    let stress: String
+    let caffeine: Bool
+
+    var currentVersion: WatchCheckIn {
+        WatchCheckIn(id: UUID(), timestamp: timestamp, mood: mood, stress: stress, caffeine: caffeine)
     }
 }
 
@@ -29,20 +41,39 @@ final class WatchSessionStore: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     func submit(mood: String, stress: String, caffeine: Bool) {
-        let payload = WatchCheckIn(timestamp: Date.now.timeIntervalSince1970, mood: mood, stress: stress, caffeine: caffeine)
-        guard let data = try? JSONEncoder().encode(payload) else { return }
+        let payload = WatchCheckIn(id: UUID(), timestamp: Date.now.timeIntervalSince1970, mood: mood, stress: stress, caffeine: caffeine)
+        var pending = loadPendingCheckIns()
+        pending.append(payload)
+        pending = Array(pending.suffix(30))
+        guard let data = try? JSONEncoder().encode(pending) else {
+            status = "체크인을 저장하지 못했어요. 다시 시도해 주세요."
+            return
+        }
         UserDefaults.standard.set(data, forKey: pendingKey)
-        status = "저장했어요 · iPhone으로 전송 준비 중"
+        status = "체크인을 저장했어요 · iPhone으로 전송 대기 중"
         flushPendingCheckIn()
+    }
+
+    private func loadPendingCheckIns() -> [WatchCheckIn] {
+        guard let data = UserDefaults.standard.data(forKey: pendingKey) else { return [] }
+        if let pending = try? JSONDecoder().decode([WatchCheckIn].self, from: data) {
+            return pending
+        }
+        if let legacy = try? JSONDecoder().decode(LegacyWatchCheckIn.self, from: data) {
+            return [legacy.currentVersion]
+        }
+        return []
     }
 
     private func flushPendingCheckIn() {
         guard WCSession.default.activationState == .activated,
-              let data = UserDefaults.standard.data(forKey: pendingKey),
-              let payload = try? JSONDecoder().decode(WatchCheckIn.self, from: data) else { return }
-        WCSession.default.transferUserInfo(payload.transferPayload)
+              !loadPendingCheckIns().isEmpty else { return }
+        let pending = loadPendingCheckIns()
+        for payload in pending {
+            WCSession.default.transferUserInfo(payload.transferPayload)
+        }
         UserDefaults.standard.removeObject(forKey: pendingKey)
-        status = "체크인을 저장했어요"
+        status = "전송을 예약했어요 · iPhone에서 도착을 확인해 주세요"
     }
 
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {

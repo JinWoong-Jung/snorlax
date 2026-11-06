@@ -7,6 +7,12 @@ struct SummaryView: View {
     @State private var exportError: String?
 
     private var nights: [SleepNight] { Array(sleepStore.nights.prefix(7)) }
+    private var recentCheckIns: [CheckIn] {
+        let calendar = Calendar.current
+        let startOfToday = calendar.startOfDay(for: .now)
+        let firstDay = calendar.date(byAdding: .day, value: -6, to: startOfToday) ?? .distantPast
+        return checkInStore.records.filter { $0.date >= firstDay && $0.date <= .now }
+    }
     private var average: Int {
         guard !nights.isEmpty else { return 0 }
         return nights.reduce(0) { $0 + $1.totalMinutes } / nights.count
@@ -19,7 +25,7 @@ struct SummaryView: View {
                     VStack(alignment: .leading, spacing: 7) {
                         Text("상담용 요약")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                        Text("필요한 기간을 선택해 기록을 한 페이지로 정리해요.")
+                        Text("최근 7일 기록을 한 페이지로 정리해요.")
                             .font(.subheadline)
                             .foregroundStyle(JammanboPalette.muted)
                     }
@@ -31,7 +37,7 @@ struct SummaryView: View {
                                 .foregroundStyle(JammanboPalette.accent)
                             metricRow("평균 수면 시간", value: "\(average / 60)시간 \(average % 60)분")
                             metricRow("확인한 수면 기록", value: "\(nights.count)일")
-                            metricRow("아침 체크인", value: "\(checkInStore.records.count)건")
+                            metricRow("최근 7일 아침 체크인", value: "\(recentCheckIns.count)건")
                             metricRow("데이터 출처", value: sleepStore.sourceLabel)
                         }
                     }
@@ -107,7 +113,7 @@ struct SummaryView: View {
 
     private func exportPDF() {
         do {
-            shareURL = try ReportPDFGenerator.create(nights: nights, checkIns: checkInStore.records, source: sleepStore.sourceLabel)
+            shareURL = try ReportPDFGenerator.create(nights: nights, checkIns: recentCheckIns, source: sleepStore.sourceLabel)
             exportError = nil
         } catch {
             exportError = "PDF를 만들지 못했습니다. 다시 시도해 주세요."

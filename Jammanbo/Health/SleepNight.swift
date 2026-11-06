@@ -7,7 +7,15 @@ struct SleepNight: Identifiable {
     let deepMinutes: Int
     let remMinutes: Int
     let coreMinutes: Int
+    let unclassifiedMinutes: Int
+    let hasDeepStageData: Bool
+    let hasRemStageData: Bool
+    let hasCoreStageData: Bool
     let isSample: Bool
+
+    var hasDetailedStages: Bool {
+        hasDeepStageData || hasRemStageData || hasCoreStageData
+    }
 
     var targetProgress: Int {
         min(100, Int(Double(totalMinutes) / 480.0 * 100.0))
@@ -30,6 +38,10 @@ struct SleepNight: Identifiable {
                 deepMinutes: deep,
                 remMinutes: rem,
                 coreMinutes: minutes - deep - rem,
+                unclassifiedMinutes: 0,
+                hasDeepStageData: true,
+                hasRemStageData: true,
+                hasCoreStageData: true,
                 isSample: true
             )
         }

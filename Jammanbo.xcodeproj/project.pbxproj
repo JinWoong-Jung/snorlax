@@ -59,7 +59,7 @@
 		157443E2B1B29B6DA4BD6087 /* HealthKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = HealthKit.framework; path = System/Library/Frameworks/HealthKit.framework; sourceTree = SDKROOT; };
 		178DFE4D36D432122B7C1602 /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
 		1F6362FD708E0B2E3B38A8A1 /* Jammanbo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Jammanbo.entitlements; sourceTree = "<group>"; };
-		48AB990F22D414184FF0ADEA /* Jammanbo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Jammanbo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		48AB990F22D414184FF0ADEA /* Jammanbo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jammanbo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4ED87C379F53BCF52D8676F4 /* JammanboWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = JammanboWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		58C8D96034C3EA4A9E3B4388 /* WatchConnectivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WatchConnectivity.framework; path = System/Library/Frameworks/WatchConnectivity.framework; sourceTree = SDKROOT; };
 		5D232CF3505B2017E67D24D8 /* JammanboApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JammanboApp.swift; sourceTree = "<group>"; };
@@ -250,14 +250,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 2700;
-				TargetAttributes = {
-					4BDBD364AA364359B93304BF = {
-						DevelopmentTeam = "";
-					};
-					ED5CC61E639863EB80FECE9A = {
-						DevelopmentTeam = "";
-					};
-				};
 			};
 			buildConfigurationList = 0150E85BC12BE994CF3D4EFE /* Build configuration list for PBXProject "Jammanbo" */;
 			developmentRegion = en;
@@ -327,7 +319,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Jammanbo/Jammanbo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 7HPULDX89S;
 				INFOPLIST_FILE = Jammanbo/Info.generated.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "잠만보";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "수면 기록을 읽어 날짜별 수면 시간과 단계를 보여줍니다. 건강 데이터는 이 기기에 표시하기 위해서만 사용합니다.";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -400,6 +396,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = 7HPULDX89S;
 				INFOPLIST_FILE = JammanboWatch/Info.generated.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.team17.jammanbo.watchkitapp;
 				SDKROOT = watchos;
@@ -412,6 +409,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = 7HPULDX89S;
 				INFOPLIST_FILE = JammanboWatch/Info.generated.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = com.team17.jammanbo.watchkitapp;
 				SDKROOT = watchos;
@@ -426,7 +424,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Jammanbo/Jammanbo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 7HPULDX89S;
 				INFOPLIST_FILE = Jammanbo/Info.generated.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "잠만보";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "수면 기록을 읽어 날짜별 수면 시간과 단계를 보여줍니다. 건강 데이터는 이 기기에 표시하기 위해서만 사용합니다.";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

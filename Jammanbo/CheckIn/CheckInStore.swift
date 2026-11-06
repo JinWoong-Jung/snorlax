@@ -36,6 +36,7 @@ final class CheckInStore: NSObject, ObservableObject, WCSessionDelegate {
     }
 
     private func insert(_ record: CheckIn) {
+        guard !records.contains(where: { $0.id == record.id }) else { return }
         records.insert(record, at: 0)
         records = Array(records.prefix(30))
         if let data = try? JSONEncoder().encode(records) {
@@ -48,14 +49,35 @@ final class CheckInStore: NSObject, ObservableObject, WCSessionDelegate {
               let stress = payload["stress"] as? String,
               let caffeine = payload["caffeine"] as? Bool else { return }
         let timestamp = payload["timestamp"] as? Double ?? Date.now.timeIntervalSince1970
-        insert(CheckIn(date: Date(timeIntervalSince1970: timestamp), mood: mood, stress: stress, caffeine: caffeine, source: "Apple Watch"))
+        let id = UUID(uuidString: payload["id"] as? String ?? "") ?? UUID()
+        insert(CheckIn(id: id, date: Date(timeIntervalSince1970: timestamp), mood: mood, stress: stress, caffeine: caffeine, source: "Apple Watch"))
         connectionLabel = "Apple Watch 체크인 동기화됨"
     }
 
+    private func updateConnectionLabel(for session: WCSession, activationState: WCSessionActivationState) {
+        guard activationState == .activated else {
+            connectionLabel = "Apple Watch 연결 대기"
+            return
+        }
+        guard session.isPaired else {
+            connectionLabel = "페어링된 Apple Watch 없음"
+            return
+        }
+        guard session.isWatchAppInstalled else {
+            connectionLabel = "Apple Watch 앱 설치 필요"
+            return
+        }
+        connectionLabel = "Apple Watch 준비됨"
+    }
+
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        let connected = error == nil && activationState == .activated
         Task { @MainActor [weak self] in
-            self?.connectionLabel = connected ? "Apple Watch 연결됨" : "Apple Watch 연결 대기"
+            guard let self else { return }
+            if error != nil {
+                self.connectionLabel = "Apple Watch 연결 대기"
+            } else {
+                self.updateConnectionLabel(for: session, activationState: activationState)
+            }
         }
     }
 
@@ -65,15 +87,15 @@ final class CheckInStore: NSObject, ObservableObject, WCSessionDelegate {
         session.activate()
     }
 
-    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
-        guard let mood = userInfo["mood"] as? String,
-              let stress = userInfo["stress"] as? String,
-              let caffeine = userInfo["caffeine"] as? Bool else { return }
-        let timestamp = userInfo["timestamp"] as? Double ?? Date.now.timeIntervalSince1970
-        let record = CheckIn(date: Date(timeIntervalSince1970: timestamp), mood: mood, stress: stress, caffeine: caffeine, source: "Apple Watch")
+    nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
         Task { @MainActor [weak self] in
-            self?.insert(record)
-            self?.connectionLabel = "Apple Watch 체크인 동기화됨"
+            self?.updateConnectionLabel(for: session, activationState: session.activationState)
+        }
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+        Task { @MainActor [weak self] in
+            self?.importWatchRecord(userInfo)
         }
     }
 }

@@ -107,22 +107,37 @@ struct SleepDashboardView: View {
                         .font(.caption)
                         .foregroundStyle(JammanboPalette.muted)
                 }
-                GeometryReader { proxy in
-                    HStack(spacing: 3) {
-                        let availableWidth = max(0, proxy.size.width - 6)
-                        stageSegment(latest.deepMinutes, total: latest.totalMinutes, width: availableWidth, color: JammanboPalette.lilac)
-                        stageSegment(latest.remMinutes, total: latest.totalMinutes, width: availableWidth, color: JammanboPalette.accent)
-                        stageSegment(latest.coreMinutes, total: latest.totalMinutes, width: availableWidth, color: Color(red: 0.34, green: 0.52, blue: 0.78))
+                if latest.hasDetailedStages {
+                    GeometryReader { proxy in
+                        HStack(spacing: 3) {
+                            let availableWidth = max(0, proxy.size.width - 9)
+                            stageSegment(latest.deepMinutes, total: latest.totalMinutes, width: availableWidth, color: JammanboPalette.lilac)
+                            stageSegment(latest.remMinutes, total: latest.totalMinutes, width: availableWidth, color: JammanboPalette.accent)
+                            stageSegment(latest.coreMinutes, total: latest.totalMinutes, width: availableWidth, color: Color(red: 0.34, green: 0.52, blue: 0.78))
+                            stageSegment(latest.unclassifiedMinutes, total: latest.totalMinutes, width: availableWidth, color: JammanboPalette.muted)
+                        }
+                        .frame(width: proxy.size.width, height: 12)
                     }
-                    .frame(width: proxy.size.width, height: 12)
-                }
-                .frame(height: 12)
-                HStack {
-                    stageLegend("깊은 잠", value: latest.deepMinutes, color: JammanboPalette.lilac)
-                    Spacer(minLength: 8)
-                    stageLegend("렘수면", value: latest.remMinutes, color: JammanboPalette.accent)
-                    Spacer(minLength: 8)
-                    stageLegend("얕은 잠", value: latest.coreMinutes, color: Color(red: 0.34, green: 0.52, blue: 0.78))
+                    .frame(height: 12)
+
+                    LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)], alignment: .leading, spacing: 10) {
+                        if latest.hasDeepStageData {
+                            stageLegend("깊은 잠", value: latest.deepMinutes, color: JammanboPalette.lilac)
+                        }
+                        if latest.hasRemStageData {
+                            stageLegend("렘수면", value: latest.remMinutes, color: JammanboPalette.accent)
+                        }
+                        if latest.hasCoreStageData {
+                            stageLegend("얕은 잠", value: latest.coreMinutes, color: Color(red: 0.34, green: 0.52, blue: 0.78))
+                        }
+                        if latest.unclassifiedMinutes > 0 {
+                            stageLegend("미분류", value: latest.unclassifiedMinutes, color: JammanboPalette.muted)
+                        }
+                    }
+                } else {
+                    Label("건강 앱에서 수면 단계를 제공하지 않았어요.", systemImage: "info.circle")
+                        .font(.caption)
+                        .foregroundStyle(JammanboPalette.muted)
                 }
             }
         }
