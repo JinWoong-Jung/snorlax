@@ -1,6 +1,6 @@
 import Foundation
 
-struct CheckIn: Codable, Identifiable, Sendable {
+struct CheckIn: Codable, Identifiable, Equatable, Sendable {
     let id: UUID
     let date: Date
     let mood: String

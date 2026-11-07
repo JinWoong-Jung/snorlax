@@ -1,0 +1,18 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad="0.25", nodesep="0.5", ranksep="0.8", splines=polyline];
+ node [fontname="Apple SD Gothic Neo", fontsize=18, shape=box, style="rounded,filled", fillcolor="#F3F6FA", color="#8C9AAA", margin="0.22,0.15"];
+ edge [fontname="Apple SD Gothic Neo", fontsize=14, color="#3C5267", arrowsize=0.8];
+ user [label="사용자\niPhone 입력과 결과"];
+ watch [label="사용자\nWatch 체크인 입력"];
+ system [label="0 잠만보\niPhone 앱과 Watch 동반 앱", fillcolor="#E5F3EF", color="#38816C"];
+ health [label="Apple HealthKit"];
+ recipient [label="사용자가 선택한\n외부 공유 대상"];
+ {rank=same; user; watch;}
+ {rank=same; health; recipient;}
+ user -> system [label="질문 · 체크인 · 목표 · 일정"];
+ system -> user [label="화면 · 답변과 근거 · 취침 목표"];
+ watch -> system [label="기분 · 스트레스 · 카페인"];
+ system -> health [label="읽기 권한 · 조회 요청"];
+ health -> system [label="수면 분석 샘플"];
+ system -> recipient [label="사용자 선택 후 PDF 공유"];
+}

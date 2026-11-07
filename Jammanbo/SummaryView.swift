@@ -3,20 +3,16 @@ import SwiftUI
 struct SummaryView: View {
     @EnvironmentObject private var sleepStore: SleepStore
     @EnvironmentObject private var checkInStore: CheckInStore
-    @State private var shareURL: URL?
+    @StateObject private var exportStore = ReportExportStore(generate: ReportPDFGenerator.create)
+    @State private var previewDocument: ReportDocument?
+    @State private var sharingDocument: ReportDocument?
     @State private var exportError: String?
 
-    private var nights: [SleepNight] { Array(sleepStore.nights.prefix(7)) }
-    private var recentCheckIns: [CheckIn] {
-        let calendar = Calendar.current
-        let startOfToday = calendar.startOfDay(for: .now)
-        let firstDay = calendar.date(byAdding: .day, value: -6, to: startOfToday) ?? .distantPast
-        return checkInStore.records.filter { $0.date >= firstDay && $0.date <= .now }
+    private var summary: ReportSummary {
+        ReportSummary(nights: sleepStore.nights, checkIns: checkInStore.records, source: sleepStore.sourceLabel)
     }
-    private var average: Int {
-        guard !nights.isEmpty else { return 0 }
-        return nights.reduce(0) { $0 + $1.totalMinutes } / nights.count
-    }
+    private var nights: [SleepNight] { summary.nights }
+    private var average: Int { summary.averageMinutes }
 
     var body: some View {
         NavigationStack {
@@ -37,7 +33,7 @@ struct SummaryView: View {
                                 .foregroundStyle(JammanboPalette.accent)
                             metricRow("평균 수면 시간", value: "\(average / 60)시간 \(average % 60)분")
                             metricRow("확인한 수면 기록", value: "\(nights.count)일")
-                            metricRow("최근 7일 아침 체크인", value: "\(recentCheckIns.count)건")
+                            metricRow("최근 7일 아침 체크인", value: "\(summary.checkIns.count)건")
                             metricRow("데이터 출처", value: sleepStore.sourceLabel)
                         }
                     }
@@ -46,13 +42,15 @@ struct SummaryView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("최근 기록")
                                 .font(.headline)
-                            ForEach(nights.prefix(5)) { night in
-                                HStack {
-                                    Text(night.date.formatted(.dateTime.month(.abbreviated).day()))
-                                        .foregroundStyle(JammanboPalette.muted)
-                                    Spacer()
-                                    Text(night.durationLabel)
-                                        .fontWeight(.semibold)
+                            ForEach(nights) { night in
+                                NavigationLink { SleepNightDetailView(date: night.date) } label: {
+                                    HStack {
+                                        Text(night.date.formatted(.dateTime.month(.abbreviated).day()))
+                                            .foregroundStyle(JammanboPalette.muted)
+                                        Spacer()
+                                        Text(night.durationLabel)
+                                            .fontWeight(.semibold)
+                                    }
                                 }
                                 .font(.subheadline)
                             }
@@ -60,7 +58,7 @@ struct SummaryView: View {
                     }
 
                     Button(action: exportPDF) {
-                        Label("요약 PDF 만들기", systemImage: "square.and.arrow.up")
+                        Label("PDF 만들고 미리보기", systemImage: "doc.text.magnifyingglass")
                             .font(.headline)
                             .foregroundStyle(JammanboPalette.background)
                             .frame(maxWidth: .infinity)
@@ -69,8 +67,8 @@ struct SummaryView: View {
                     }
                     .buttonStyle(.plain)
 
-                    if let shareURL {
-                        ShareLink(item: shareURL) {
+                    if let document = exportStore.document, document.content == summary.content {
+                        Button(action: sharePDF) {
                             Label("PDF 공유하기", systemImage: "doc.richtext")
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(JammanboPalette.accent)
@@ -97,6 +95,12 @@ struct SummaryView: View {
             .background(JammanboPalette.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
         }
+        .sheet(item: $previewDocument) { PDFPreviewSheet(document: $0) }
+        .sheet(item: $sharingDocument) { PDFShareSheet(url: $0.url) }
+        .onChange(of: summary.content) { _, content in
+            exportStore.synchronize(with: content)
+            previewDocument = nil
+        }
     }
 
     private func metricRow(_ title: String, value: String) -> some View {
@@ -113,7 +117,16 @@ struct SummaryView: View {
 
     private func exportPDF() {
         do {
-            shareURL = try ReportPDFGenerator.create(nights: nights, checkIns: recentCheckIns, source: sleepStore.sourceLabel)
+            previewDocument = try exportStore.prepare(summary)
+            exportError = nil
+        } catch {
+            exportError = "PDF를 만들지 못했습니다. 다시 시도해 주세요."
+        }
+    }
+
+    private func sharePDF() {
+        do {
+            sharingDocument = try exportStore.prepare(summary)
             exportError = nil
         } catch {
             exportError = "PDF를 만들지 못했습니다. 다시 시도해 주세요."

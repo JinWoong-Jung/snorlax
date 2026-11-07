@@ -27,6 +27,17 @@
 		D520EA33DDD767B2995D2A18 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6046D423F451F1B42676363 /* Palette.swift */; };
 		DA14DA30D5FA5D7D4B6DFFE7 /* WatchHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC08F303927A10F4DC88057 /* WatchHomeView.swift */; };
 		F1F8A31BB02005384D3D7435 /* SleepStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65C76910FECDDCEACF4CEBBE /* SleepStore.swift */; };
+		6F766C2DD7EB13C8D94536DA /* AnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8533F868099713DC996C3B6C /* AnalysisService.swift */; };
+		DCFBBA176E1974ED259BAA07 /* PlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 599ABBA2F19C5E7A5F52963B /* PlanStore.swift */; };
+		1E58F0D589BA373C8924E35F /* ReportSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB8F2FD12B58DA5594A9203 /* ReportSummary.swift */; };
+		50EA4FF32A8B374875677596 /* SleepNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A01E32DE5066AD7D89999B9 /* SleepNormalizer.swift */; };
+		D7AA72EA58C7669B1F393684 /* SleepHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12A637EAFEF9EFE394168E63 /* SleepHistoryView.swift */; };
+		FCED22B6F16A846C55FEF995 /* CheckInRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E83A2DFEB8F41354B7239D /* CheckInRepository.swift */; };
+		20FC1CDC75B416036A9568ED /* CheckInHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBBEE216BFAF36E353C730E /* CheckInHistoryView.swift */; };
+		F7891A8E5639877ECF302878 /* ReportExportStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CA16E47621F0DCBFEBA9127 /* ReportExportStore.swift */; };
+		74CD70C0927F4696493FF8DB /* PDFPreviewSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCF20627C0BD2DF3B06B571 /* PDFPreviewSheet.swift */; };
+		7869A063CFBFBE8E444A7EEA /* CheckInDelivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B39BE9B70E8BDF1AED51A3D6 /* CheckInDelivery.swift */; };
+		E13AABB0F9321CA309C184B1 /* CheckInDelivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B39BE9B70E8BDF1AED51A3D6 /* CheckInDelivery.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -77,6 +88,16 @@
 		AFD3CB3E827587D592A39C86 /* WatchSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSessionStore.swift; sourceTree = "<group>"; };
 		ED6E30B1D72DC6D119E4D79D /* Info.generated.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.generated.plist; sourceTree = "<group>"; };
 		F8A4B106320C691A9718DBCB /* SleepDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepDashboardView.swift; sourceTree = "<group>"; };
+		8533F868099713DC996C3B6C /* AnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analysis/AnalysisService.swift; sourceTree = "<group>"; };
+		599ABBA2F19C5E7A5F52963B /* PlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Planning/PlanStore.swift; sourceTree = "<group>"; };
+		0EB8F2FD12B58DA5594A9203 /* ReportSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reporting/ReportSummary.swift; sourceTree = "<group>"; };
+		3A01E32DE5066AD7D89999B9 /* SleepNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Health/SleepNormalizer.swift"; sourceTree = "<group>"; };
+		12A637EAFEF9EFE394168E63 /* SleepHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Health/SleepHistoryView.swift"; sourceTree = "<group>"; };
+		90E83A2DFEB8F41354B7239D /* CheckInRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CheckIn/CheckInRepository.swift"; sourceTree = "<group>"; };
+		6EBBEE216BFAF36E353C730E /* CheckInHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CheckIn/CheckInHistoryView.swift"; sourceTree = "<group>"; };
+		2CA16E47621F0DCBFEBA9127 /* ReportExportStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reporting/ReportExportStore.swift"; sourceTree = "<group>"; };
+		5CCF20627C0BD2DF3B06B571 /* PDFPreviewSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Reporting/PDFPreviewSheet.swift"; sourceTree = "<group>"; };
+		B39BE9B70E8BDF1AED51A3D6 /* CheckInDelivery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/CheckInDelivery.swift"; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -184,6 +205,16 @@
 		F346E8D7532FE1EA93297027 /* Jammanbo */ = {
 			isa = PBXGroup;
 			children = (
+				B39BE9B70E8BDF1AED51A3D6 /* CheckInDelivery.swift */,
+				5CCF20627C0BD2DF3B06B571 /* PDFPreviewSheet.swift */,
+				2CA16E47621F0DCBFEBA9127 /* ReportExportStore.swift */,
+				6EBBEE216BFAF36E353C730E /* CheckInHistoryView.swift */,
+				90E83A2DFEB8F41354B7239D /* CheckInRepository.swift */,
+				12A637EAFEF9EFE394168E63 /* SleepHistoryView.swift */,
+				3A01E32DE5066AD7D89999B9 /* SleepNormalizer.swift */,
+				0EB8F2FD12B58DA5594A9203 /* ReportSummary.swift */,
+				599ABBA2F19C5E7A5F52963B /* PlanStore.swift */,
+				8533F868099713DC996C3B6C /* AnalysisService.swift */,
 				6D6D9C657A2AEB4FF5180C96 /* AskView.swift */,
 				9A6DD46FAAB7497F3EC83D97 /* CheckInView.swift */,
 				975A838D006E0CABD3A0626D /* ContentView.swift */,
@@ -276,6 +307,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7869A063CFBFBE8E444A7EEA /* CheckInDelivery.swift in Sources */,
+				74CD70C0927F4696493FF8DB /* PDFPreviewSheet.swift in Sources */,
+				F7891A8E5639877ECF302878 /* ReportExportStore.swift in Sources */,
+				20FC1CDC75B416036A9568ED /* CheckInHistoryView.swift in Sources */,
+				FCED22B6F16A846C55FEF995 /* CheckInRepository.swift in Sources */,
+				D7AA72EA58C7669B1F393684 /* SleepHistoryView.swift in Sources */,
+				50EA4FF32A8B374875677596 /* SleepNormalizer.swift in Sources */,
+				1E58F0D589BA373C8924E35F /* ReportSummary.swift in Sources */,
+				DCFBBA176E1974ED259BAA07 /* PlanStore.swift in Sources */,
+				6F766C2DD7EB13C8D94536DA /* AnalysisService.swift in Sources */,
 				2D983F78C386FFFAB1D1B8AD /* AskView.swift in Sources */,
 				98184D003EFFCB53A84E4858 /* CheckIn.swift in Sources */,
 				11C33128F20927DE1D673AA6 /* CheckInStore.swift in Sources */,
@@ -296,6 +337,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E13AABB0F9321CA309C184B1 /* CheckInDelivery.swift in Sources */,
 				CF6ACA65233EE79734167D45 /* JammanboWatchApp.swift in Sources */,
 				DA14DA30D5FA5D7D4B6DFFE7 /* WatchHomeView.swift in Sources */,
 				22799FAD4034E6342554A4C8 /* WatchSessionStore.swift in Sources */,

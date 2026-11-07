@@ -1,6 +1,6 @@
 import Foundation
 
-struct SleepNight: Identifiable {
+struct SleepNight: Identifiable, Equatable, Sendable {
     let id: Date
     let date: Date
     let totalMinutes: Int
@@ -12,13 +12,32 @@ struct SleepNight: Identifiable {
     let hasRemStageData: Bool
     let hasCoreStageData: Bool
     let isSample: Bool
+    let startDate: Date?
+    let endDate: Date?
+
+    init(id: Date, date: Date, totalMinutes: Int, deepMinutes: Int, remMinutes: Int, coreMinutes: Int, unclassifiedMinutes: Int, hasDeepStageData: Bool, hasRemStageData: Bool, hasCoreStageData: Bool, isSample: Bool, startDate: Date? = nil, endDate: Date? = nil) {
+        self.id = id
+        self.date = date
+        self.totalMinutes = totalMinutes
+        self.deepMinutes = deepMinutes
+        self.remMinutes = remMinutes
+        self.coreMinutes = coreMinutes
+        self.unclassifiedMinutes = unclassifiedMinutes
+        self.hasDeepStageData = hasDeepStageData
+        self.hasRemStageData = hasRemStageData
+        self.hasCoreStageData = hasCoreStageData
+        self.isSample = isSample
+        self.startDate = startDate
+        self.endDate = endDate
+    }
 
     var hasDetailedStages: Bool {
         hasDeepStageData || hasRemStageData || hasCoreStageData
     }
 
-    var targetProgress: Int {
-        min(100, Int(Double(totalMinutes) / 480.0 * 100.0))
+    func targetProgress(goalMinutes: Int) -> Int {
+        guard goalMinutes > 0 else { return 0 }
+        return min(100, Int(Double(totalMinutes) / Double(goalMinutes) * 100.0))
     }
 
     var durationLabel: String {

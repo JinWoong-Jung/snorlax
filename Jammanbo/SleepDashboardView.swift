@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SleepDashboardView: View {
     @EnvironmentObject private var sleepStore: SleepStore
+    @EnvironmentObject private var planStore: PlanStore
 
     private var latest: SleepNight { sleepStore.nights[0] }
     private var recentAverage: Int {
@@ -18,6 +19,16 @@ struct SleepDashboardView: View {
                     sleepCard
                     stageCard
                     trendCard
+                    NavigationLink {
+                        SleepHistoryView()
+                    } label: {
+                        Label("최근 7일 기록 모두 보기", systemImage: "list.bullet.rectangle")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(JammanboPalette.accent)
+                            .frame(maxWidth: .infinity)
+                            .padding(14)
+                            .background(JammanboPalette.surface, in: RoundedRectangle(cornerRadius: 16))
+                    }
                     healthButton
                     if let message = sleepStore.message {
                         Text(message)
@@ -31,6 +42,7 @@ struct SleepDashboardView: View {
             }
             .background(JammanboPalette.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
+            .refreshable { await sleepStore.refreshIfConnected() }
         }
     }
 
@@ -60,7 +72,7 @@ struct SleepDashboardView: View {
         SoftCard {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    Label("어젯밤 수면", systemImage: "moon.stars.fill")
+                    Label("최근 수면 합계", systemImage: "moon.stars.fill")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(JammanboPalette.accent)
                     Spacer()
@@ -77,10 +89,10 @@ struct SleepDashboardView: View {
                         .tracking(-1.5)
                     Spacer()
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("8시간 목표")
+                        Text("\(planStore.sleepGoalMinutes / 60)시간 \(planStore.sleepGoalMinutes % 60)분 목표")
                             .font(.caption)
                             .foregroundStyle(JammanboPalette.muted)
-                        Text("\(latest.targetProgress)%")
+                        Text("\(latest.targetProgress(goalMinutes: planStore.sleepGoalMinutes))%")
                             .font(.system(size: 25, weight: .bold, design: .rounded))
                             .foregroundStyle(JammanboPalette.lilac)
                     }

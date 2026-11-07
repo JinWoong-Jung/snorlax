@@ -17,6 +17,7 @@ targets:
     platform: iOS
     sources:
       - path: Jammanbo
+      - path: Shared
     info:
       path: Jammanbo/Info.generated.plist
       properties:
@@ -36,6 +37,7 @@ targets:
       - target: JammanboWatch
         embed: true
         link: false
+      - sdk: PDFKit.framework
       - sdk: HealthKit.framework
       - sdk: WatchConnectivity.framework
 
@@ -44,6 +46,7 @@ targets:
     platform: watchOS
     sources:
       - path: JammanboWatch
+      - path: Shared
     info:
       path: JammanboWatch/Info.generated.plist
       properties:

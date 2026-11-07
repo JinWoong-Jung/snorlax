@@ -103,6 +103,16 @@ struct WatchHomeView: View {
                     .foregroundStyle(.white.opacity(0.62))
                     .frame(maxWidth: .infinity, alignment: .center)
                     .multilineTextAlignment(.center)
+
+                if sessionStore.pendingCount > 0 {
+                    Button("다시 전송 확인") { sessionStore.retryNow() }
+                        .font(.caption2)
+                }
+                if let confirmed = sessionStore.lastConfirmedAt {
+                    Text("최근 iPhone 저장 확인 · \(confirmed.formatted(.dateTime.hour().minute()))")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.white.opacity(0.62))
+                }
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 8)

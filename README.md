@@ -1,101 +1,82 @@
-# 잠만보 (Jammanbo)
+# 잠만보 Jammanbo
 
-Apple Watch 사용자의 수면 기록과 생활습관 기록을 연결하는 iPhone·Apple Watch 동반 앱 프로토타입입니다. 사용자가 수면 데이터와 아침 체크인을 함께 살펴보고, 개인 기록을 바탕으로 수면 목표를 세우며, 최근 기록을 상담용 PDF로 공유할 수 있도록 설계했습니다.
+HealthKit 수면 기록과 생활습관 체크인을 함께 살펴보는 iPhone 앱과 Apple Watch 동반 앱 프로토타입입니다. 최근 기록의 날짜와 출처를 확인하고, 목표 취침 시각을 계산하며, 상담에 참고할 요약 PDF를 만들 수 있습니다.
 
-## 프로젝트 요약
+첫 사용자 테스트는 iPhone 중심으로 진행합니다. Apple Watch 앱은 선택적으로 체크인을 입력하는 동반 앱이며, iPhone 핵심 기능에 Watch가 필수는 아닙니다. 현재 Xcode 프로젝트에는 Watch 앱이 함께 포함됩니다.
 
-- **iPhone 앱:** HealthKit 수면 기록과 최근 7일 추세, 아침 체크인, 기록 기반 질문과 근거, 수면 목표·수동 일정, 1페이지 요약 PDF를 제공합니다.
-- **Apple Watch 앱:** 기분·스트레스·오후 카페인을 빠르게 입력하고 WatchConnectivity를 통해 iPhone에 전달합니다.
-- **데이터:** 수면·체크인·목표·일정은 기기 안에 저장합니다. HealthKit 권한을 거부했거나 기록이 없을 때는 예시 데이터로 화면 흐름을 확인할 수 있습니다.
-- **현재 범위:** 실제 생성형 LLM, 계정·서버, 클라우드 저장, 캘린더 계정 동기화는 구현하지 않았습니다. 질문 답변은 기기 내 규칙으로 만들며, 의료 진단이나 치료 지시를 제공하지 않습니다.
+## 구현된 기능
 
-## 주요 기능
+- **수면 조회:** HealthKit 구간의 겹침을 제거하고 세션의 기상일로 집계합니다. 최근 7일 전체 목록과 일별 상세를 제공하며 단계 미제공과 0분을 구분합니다. 연결 요청 후에는 앱 복귀·기록 변경 시 다시 조회합니다.
+- **체크인:** iPhone·Watch에서 입력하고 기록 시각순 최근 30건을 보관합니다. 전체 이력에서 수정·삭제할 수 있습니다. Watch는 iPhone 저장 확인까지 대기열을 유지하고 오류·미확인 항목을 재시도합니다.
+- **질문:** 평균 수면, 깊은 잠·렘수면, 같은 날짜의 생활습관 비교를 기기 내 규칙으로 계산하고 근거를 표시합니다. 비교 조건별 최소 2일이 필요하며 샘플 수면과 개인 체크인은 비교하지 않습니다.
+- **계획:** 기상 목표에서 6~10시간의 수면 목표를 빼 취침 시각을 계산합니다. 수동 일정은 저장·삭제할 수 있으며 취침 계산에 자동 반영되지 않습니다.
+- **요약:** 같은 최근 7일 범위로 한 페이지 PDF를 만들고 앱 안에서 미리봅니다. 입력이 바뀌면 이전 PDF를 무효화하고 공유 시에도 새로 생성합니다. 공유 대상은 사용자가 선택합니다.
 
-1. HealthKit에서 수면 분석 기록을 읽고 최근 7일 수면 시간을 보여줍니다.
-2. iPhone 또는 Apple Watch에서 아침 기분·스트레스·카페인을 기록합니다.
-3. 개인 기록에 관한 질문에 규칙 기반으로 답하고, 사용한 기간과 데이터 출처를 표시합니다. 기록이 부족하면 추정하지 않고 안내합니다.
-4. 목표 기상 시각과 수면 시간을 기준으로 취침 목표를 계산합니다. 일정은 현재 직접 입력합니다.
-5. 최근 기록 요약을 1페이지 PDF로 만들어 사용자가 직접 공유할 수 있습니다.
+수면 조회 결과는 메모리에 보관합니다. 체크인·목표·수동 일정은 UserDefaults에 저장합니다. 서버, 로그인, 클라우드 백업, 생성형 LLM과 외부 캘린더 동기화는 현재 구현하지 않았습니다. 이 앱은 기록 요약용이며 진단이나 치료 지시를 제공하지 않습니다.
 
-## 앱 구조
+## 구조
 
 ```text
-iPhone (SwiftUI)
-  ├─ HealthKit: 수면 분석 데이터 읽기
-  ├─ 체크인·수면 목표·수동 일정의 로컬 저장
-  ├─ 기록 기반 규칙형 질문과 근거 표시
-  └─ 요약 PDF 생성 및 시스템 공유
+JammanboApp → ContentView와 화면
+  ├─ SleepStore → HealthKit 읽기 → SleepNormalizer → 전체 이력·상세
+  ├─ CheckInStore → CheckInRepository → 입력·수정·삭제·수신 확인
+  ├─ PlanStore → 목표 계산과 수동 일정 저장
+  ├─ AskView → AnalysisService → ReportSummary
+  └─ SummaryView → ReportSummary → ReportExportStore → PDF 생성·미리보기·공유
 
-Apple Watch (SwiftUI)
-  └─ 기분·스트레스·카페인 체크인
-       └─ WatchConnectivity transferUserInfo → iPhone
+JammanboWatchApp → WatchHomeView → WatchSessionStore
+  └─ 영속 대기열 → WatchConnectivity → iPhone 저장 → 확인 응답 후 제거
 ```
 
-## 문서와 제출 파일
+[애플리케이션 구조](docs/architecture/Application_Structure.md)에 DFD, 모듈 구조도, 자료 사전, Mini-Spec과 FR-01~12 코드 추적표를 정리했습니다. SSAD 보완 문서의 내용을 최신 구현과 대조해 제출용 SSAD에 통합했습니다.
 
-| 문서 | 설명 | 현재 파일 |
+## 문서와 제출물
+
+| 구분 | 편집 원본 | 제출 또는 공유 파일 |
 |---|---|---|
-| **SSRD** | System/Software Requirements Definition. 제품 범위, 사용자와 시스템 요구사항, 품질 조건, 예외 상황, 검수 기준을 정의합니다. 무엇을 만들어야 하는지에 대한 기준 문서입니다. | 제출 PDF: `output/pdf/01_Jammanbo_SSRD.pdf`; 동기화한 편집 원본: `01_Jammanbo_SSRD.docx`. |
-| **MBOX 참고 UI/UX 기획안** | 과제는 MBOX 파일을 참고하도록 안내합니다. 이 저장소와 `9주차/` 자료 폴더에서는 MBOX라는 이름의 원본 파일을 찾지 못했습니다. 대신 제출 UI/UX 문서에는 서비스 개요, 데이터 출처, 사용자 흐름, 화면별 설명, 빈 상태·오류, 고객 테스트 과업을 정리했습니다. MBOX는 여기서 과제에 지정된 UI/UX 참고 자료를 가리키는 이름으로 사용하며, 약어의 풀이는 확인되지 않았습니다. | 제출 PDF: `output/pdf/02_Jammanbo_UIUX.pdf`; 최신 편집 원본: `output/pptx/02_Jammanbo_UIUX_v4.pptx`. `02_Jammanbo_UIUX.pptx`는 이전 편집본입니다. |
-| **SSAD** | System/Software Architecture Description. iPhone·Watch 앱, HealthKit, WatchConnectivity, 로컬 저장, PDF 내보내기 사이의 구성과 데이터 흐름, 권한·보안 결정을 설명합니다. 어떻게 만들었는지와 현재 구현 범위를 보여주는 문서입니다. | 제출 PDF: `output/pdf/03_Jammanbo_SSAD.pdf`; 동기화한 편집 원본: `03_Jammanbo_SSAD.docx`. |
+| SSRD 요구사항 | [01_Jammanbo_SSRD.docx](01_Jammanbo_SSRD.docx), [요구사항 텍스트](docs/requirements/SSRD.md) | [SSRD PDF](output/pdf/01_Jammanbo_SSRD.pdf) |
+| UI/UX 기획안 | [02_Jammanbo_UIUX.pptx](02_Jammanbo_UIUX.pptx), 동일 내용의 [v5 원본](output/pptx/02_Jammanbo_UIUX_v5.pptx) | [UI/UX PDF](output/pdf/02_Jammanbo_UIUX.pdf) |
+| SSAD 구조 명세 | [03_Jammanbo_SSAD.docx](03_Jammanbo_SSAD.docx), [GitHub 열람용 구조 문서](docs/architecture/Application_Structure.md) | [SSAD PDF](output/pdf/03_Jammanbo_SSAD.pdf) |
+| 고객 검증 계획과 빈 기록 양식 | [05_Jammanbo_Customer_Validation.docx](05_Jammanbo_Customer_Validation.docx) | [테스트 패킷](docs/user-test/Customer_Test_Packet.md) |
+| 시연 영상 | [1분 대본과 촬영 절차](docs/submission/One_Minute_Demo_Script.md) | 촬영·업로드 및 링크 기록 필요 |
+| 코드 검토 | [SSAD 반영 내역과 검증 상태](docs/qa/SSAD_Alignment_Review.md) | [다른 AI 에이전트용 검토 안내](docs/qa/AI_Review_Guide.md) |
 
-`9주차/` 폴더에는 SSRD·UI/UX·프로토타입의 참고 예시가 있습니다. 이 폴더는 제출 결과물이 아니며 GitHub에 포함하지 않도록 `.gitignore`에서 제외합니다.
+SSRD는 무엇을 만들고 검수할지, UI/UX 기획안은 화면과 사용자 흐름을, SSAD는 데이터·모듈·외부 시스템의 관계와 내부 규칙을 설명합니다. 과제에 언급된 MBOX 원본은 저장소에서 확인되지 않아 `9주차/`의 UI/UX·MBASE 예시를 참고합니다. MBOX의 약어 풀이는 확정하지 않았습니다.
 
-## 저장소 구성
+제공받은 `Jammanbo_SSAD_Application_Structure.docx`는 참고 원본으로 보존했습니다. 최신 구조는 통합 SSAD와 Markdown을 기준으로 확인합니다. `output/pptx/02_Jammanbo_UIUX_v4.pptx`와 `docs/archive/slides_v1.ndjson`, `04_Jammanbo_Prototype.html`은 이전 기획 참고본입니다. `9주차/`는 수업 참고자료로 Git에서 제외합니다.
 
-```text
-snorlax/                            # 저장소 루트
-  Jammanbo/                         # iPhone 앱 소스
-  JammanboWatch/                    # Apple Watch 동반 앱 소스
-  Jammanbo.xcodeproj/               # Xcode 프로젝트
-  project.yml                       # XcodeGen 프로젝트 정의
-  output/
-    pdf/                            # SSRD, UI/UX, SSAD 제출 PDF
-    pptx/                           # 최신 UI/UX 편집 원본
-  docs/
-    submission/                     # 시연 촬영 안내와 제출 자료
-    user-test/                      # 사용자 테스트 계획·기록 양식
-  01_Jammanbo_SSRD.docx             # SSRD 편집 원본
-  02_Jammanbo_UIUX.pptx             # UI/UX 이전 편집본
-  03_Jammanbo_SSAD.docx             # SSAD 편집 원본
-  04_Jammanbo_Prototype.html        # 이전 웹 프로토타입 참고본
-  05_Jammanbo_Customer_Validation.docx # 고객 테스트 계획 초안
-  docs/user-test/Customer_Test_Packet.md # 진행자용 테스트·기록 패킷
-  docs/submission/One_Minute_Demo_Script.md # 60초 시연 대본·촬영 체크리스트
-```
+## 실행과 검증
 
-## 빌드 및 실행
-
-요구 도구는 Xcode 27 이상과 XcodeGen 2.46 이상입니다.
+macOS와 Xcode 27 이상에서 프로젝트를 엽니다. 최소 대상은 iOS 17, watchOS 10입니다.
 
 ```sh
-xcodegen generate
 open Jammanbo.xcodeproj
 ```
 
-Xcode에서 `Jammanbo` scheme을 iPhone 시뮬레이터로 빌드하거나 페어링된 iPhone·Apple Watch에 실행합니다. 실제 기기에 설치할 때는 Apple Developer Team 서명이 필요합니다. HealthKit 실제 기록 조회와 WatchConnectivity 전달은 페어링된 기기에서 확인해야 합니다.
+`Jammanbo` 스킴에서 iPhone을 선택하고 Signing & Capabilities의 Team을 설정해 실행합니다. 프로젝트에는 Watch 앱도 임베드되어 있어 해당 타깃의 서명도 확인해야 합니다. 이미 구성된 프로젝트는 XcodeGen을 다시 실행할 필요가 없습니다. `project.yml`을 수정해 재생성할 때는 XcodeGen 2.46 이상을 사용하고 기기 서명 Team을 다시 확인합니다.
 
-빌드 명령:
+UI에 의존하지 않는 계산·저장 검사:
 
 ```sh
-xcodebuild -project Jammanbo.xcodeproj \
-  -scheme Jammanbo \
-  -destination 'generic/platform=iOS' \
+sh scripts/check_domain_logic.sh
+```
+
+서명 없는 iPhone·Watch 빌드 확인:
+
+```sh
+xcodebuild -project Jammanbo.xcodeproj -scheme Jammanbo \
+  -destination 'generic/platform=iOS' -derivedDataPath /tmp/JammanboDerivedData \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-## 진행 상태
+이 명령은 설치용 서명을 만들지 않습니다. 실제 HealthKit, Watch 전달과 공유 동작은 기기에서 확인해야 합니다. Windows에서는 GitHub 소스를 읽고 리뷰할 수 있지만 Xcode 빌드와 iOS 시뮬레이터 실행은 할 수 없습니다.
 
-- SSRD·UI/UX·SSAD PDF를 만들었습니다.
-- SSRD·SSAD 편집 원본 DOCX를 현재 앱 범위와 제출 PDF에 맞춰 동기화했습니다.
-- iOS·watchOS를 포함하는 Xcode 프로젝트가 있으며, 기기용 빌드는 성공했습니다.
-- 페어링된 실제 기기에서 HealthKit 기록 조회와 체크인 전달을 검증해야 합니다.
-- 60초 시연 대본과 촬영 체크리스트는 `docs/submission/One_Minute_Demo_Script.md`에 준비했습니다. 영상 촬영과 YouTube 업로드는 아직 하지 않았습니다.
-- 테스트 과업·동의 문구·기록 양식은 `docs/user-test/Customer_Test_Packet.md`에 준비했습니다. 실제 참여자 테스트와 데이터 분석 보고서는 아직 진행하지 않았습니다.
+## 진행 상태와 남은 일
 
-## 개인정보 및 공개 시연
+- 요구사항·화면·아키텍처 문서와 테스트·시연 양식을 정리했습니다.
+- 사용자가 본인 iPhone에서 앱 실행을 확인했습니다. HealthKit의 실제 결과와 Watch 전달을 모두 검증한 상태로 간주하지 않습니다.
+- 실제 참여자의 과업 결과와 분석 보고서, 촬영한 시연 영상·YouTube 링크는 아직 없습니다.
+- 수면 정규화·저장·전송 큐·PDF 무효화 등 자동 검사 61개와 iPhone·Watch 전체 빌드가 통과했습니다. 별도 Mac Catalyst 검증 앱에서 이력·수정·재실행·질문·PDF 흐름도 확인했습니다.
+- 구현 내역과 실기기 검증 목록은 [기능 구현 보고서](docs/qa/Functional_Implementation_2026-11-07.md)를 참고합니다. 실제 HealthKit·Watch 전달·iPhone 소프트웨어 키보드는 기기 확인이 남아 있습니다.
 
-- 실제 사용자 테스트 전 수집 항목과 목적을 설명하고 동의를 받습니다.
-- 식별 가능한 참여자 정보와 원자료는 저장소에 올리지 않습니다.
-- 공개 시연 영상은 합성 데이터로 촬영하고 개인 정보가 화면에 노출되지 않도록 합니다.
-- 예시 화면의 수치는 실제 사용자 측정 결과가 아닙니다.
+실제 참여자의 동의와 사용 관찰을 수집하고, AI 코드 리뷰 결과는 보조 검토로 구분합니다. 식별 가능한 건강 기록과 원자료를 저장소에 올리지 않으며 공개 영상에는 샘플 데이터를 사용합니다.

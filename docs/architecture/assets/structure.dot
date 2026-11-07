@@ -1,0 +1,26 @@
+digraph G {
+ graph [rankdir=TB, bgcolor="white", pad="0.2", nodesep="0.25", ranksep="0.5", splines=ortho];
+ node [fontname="Apple SD Gothic Neo", fontsize=15, shape=box, style="rounded,filled", fillcolor="#F3F6FA", color="#8C9AAA", margin="0.15,0.12"];
+ edge [color="#697E91", arrowsize=0.7];
+ root [label="JammanboApp\n환경 객체 생성과 주입", fillcolor="#E5F3EF", color="#38816C"];
+ content [label="ContentView\n오늘 · 체크인 · 질문 · 계획 · 요약"];
+ sleep [label="SleepDashboardView\nSleepStore / SleepNormalizer"];
+ check [label="CheckInHistoryView\nCheckInStore / Repository"];
+ ask [label="AskView\nAnalysisService"];
+ plan [label="PlanView\nPlanStore / PlanEvent"];
+ report [label="SummaryView\nReportSummary"];
+ hk [label="HealthKit 읽기"];
+ defaults [label="UserDefaults\n체크인 · 목표 · 일정", fillcolor="#F0EEFA", color="#8C80B0"];
+ window [label="ReportSummary\n최근 7일 범위와 평균"];
+ pdf [label="ReportExportStore\nPDF 생성·미리보기·공유"];
+ watch [label="JammanboWatchApp\nWatchHomeView"];
+ wstore [label="WatchSessionStore\n확인 전 보관 · 재시도"];
+ root -> content;
+ content -> sleep; content -> check; content -> ask; content -> plan; content -> report;
+ sleep -> hk; check -> defaults; plan -> defaults;
+ ask -> window; report -> pdf; report -> window;
+ watch -> wstore;
+ wstore -> check [dir=both,style=dashed, color="#38816C", constraint=false, xlabel="WCSession 전달·확인"];
+ {rank=same; root; watch;}
+ {rank=same; hk; defaults; window; pdf;}
+}

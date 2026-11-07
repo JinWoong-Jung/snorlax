@@ -5,6 +5,7 @@ struct CheckInView: View {
     @State private var mood = "괜찮아요"
     @State private var stress = "보통"
     @State private var caffeine = false
+    @State private var savedMessage: String?
 
     private let moods = ["개운해요", "괜찮아요", "피곤해요"]
     private let stressOptions = ["낮음", "보통", "높음"]
@@ -50,6 +51,7 @@ struct CheckInView: View {
 
                     Button {
                         checkInStore.saveFromPhone(mood: mood, stress: stress, caffeine: caffeine)
+                        savedMessage = "체크인을 저장했어요. 아래 최근 기록에서 확인할 수 있어요."
                     } label: {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
@@ -62,6 +64,10 @@ struct CheckInView: View {
                         .background(JammanboPalette.accent, in: Capsule())
                     }
                     .buttonStyle(.plain)
+
+                    if let savedMessage {
+                        Text(savedMessage).font(.caption).foregroundStyle(JammanboPalette.accent)
+                    }
 
                     HStack(spacing: 8) {
                         Image(systemName: "applewatch")
@@ -89,6 +95,12 @@ struct CheckInView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("최근 체크인")
                     .font(.headline)
+                NavigationLink {
+                    CheckInHistoryView()
+                } label: {
+                    Label("전체 기록 \(checkInStore.records.count)건 보기", systemImage: "list.bullet")
+                        .font(.subheadline).foregroundStyle(JammanboPalette.accent)
+                }
                 ForEach(checkInStore.records.prefix(4)) { record in
                     HStack {
                         VStack(alignment: .leading, spacing: 3) {

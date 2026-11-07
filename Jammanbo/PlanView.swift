@@ -1,35 +1,10 @@
 import SwiftUI
 
-private struct PlanEvent: Codable, Identifiable {
-    let id: UUID
-    let title: String
-    let time: Date
-
-    init(id: UUID = UUID(), title: String, time: Date) {
-        self.id = id
-        self.title = title
-        self.time = time
-    }
-}
-
 struct PlanView: View {
-    @AppStorage("jammanbo.targetWakeMinutes") private var wakeMinutes = 420
-    @AppStorage("jammanbo.targetSleepMinutes") private var sleepGoalMinutes = 480
+    @EnvironmentObject private var planStore: PlanStore
     @State private var eventTitle = ""
     @State private var eventTime = Date.now
-    @State private var events = PlanView.loadEvents()
     @FocusState private var eventTitleFocused: Bool
-
-    private var wakeTime: Date {
-        var components = Calendar.current.dateComponents([.year, .month, .day], from: .now)
-        components.hour = wakeMinutes / 60
-        components.minute = wakeMinutes % 60
-        return Calendar.current.date(from: components) ?? .now
-    }
-
-    private var suggestedBedtime: Date {
-        Calendar.current.date(byAdding: .minute, value: -sleepGoalMinutes, to: wakeTime) ?? wakeTime
-    }
 
     var body: some View {
         NavigationStack {
@@ -38,7 +13,7 @@ struct PlanView: View {
                     VStack(alignment: .leading, spacing: 7) {
                         Text("이번 주 계획")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                        Text("목표 기상 시간과 일정을 기준으로 수면 시간을 정해요.")
+                        Text("수면·기상 목표를 정하고 일정을 기록해요.")
                             .font(.subheadline)
                             .foregroundStyle(JammanboPalette.muted)
                     }
@@ -51,10 +26,10 @@ struct PlanView: View {
                             HStack {
                                 Text("목표 수면")
                                 Spacer()
-                                Text("\(sleepGoalMinutes / 60)시간 \(sleepGoalMinutes % 60)분")
+                                Text("\(planStore.sleepGoalMinutes / 60)시간 \(planStore.sleepGoalMinutes % 60)분")
                                     .foregroundStyle(JammanboPalette.lilac)
                             }
-                            Stepper("", value: $sleepGoalMinutes, in: 360...600, step: 15)
+                            Stepper("", value: $planStore.sleepGoalMinutes, in: 360...600, step: 15)
                                 .labelsHidden()
                             HStack {
                                 Text("목표 기상 시간")
@@ -76,7 +51,7 @@ struct PlanView: View {
                                     .font(.subheadline)
                                     .foregroundStyle(JammanboPalette.muted)
                                 Spacer()
-                                Text(suggestedBedtime.formatted(.dateTime.hour().minute()))
+                                Text(planStore.suggestedBedtime().formatted(.dateTime.hour().minute()))
                                     .font(.system(size: 28, weight: .bold, design: .rounded))
                             }
                             Text("기상 목표에서 설정한 수면 시간을 거꾸로 계산했어요. 일정과 몸 상태에 맞게 조정해 주세요.")
@@ -115,7 +90,7 @@ struct PlanView: View {
                                     .background(JammanboPalette.accent, in: Capsule())
                             }
                             .buttonStyle(.plain)
-                            ForEach(events.sorted { $0.time < $1.time }) { event in
+                            ForEach(planStore.events.sorted { $0.time < $1.time }) { event in
                                 HStack {
                                     VStack(alignment: .leading, spacing: 3) {
                                         Text(event.title).font(.subheadline.weight(.medium))
@@ -125,8 +100,7 @@ struct PlanView: View {
                                     }
                                     Spacer()
                                     Button {
-                                        events.removeAll { $0.id == event.id }
-                                        saveEvents()
+                                        planStore.removeEvent(id: event.id)
                                     } label: {
                                         Image(systemName: "trash")
                                             .foregroundStyle(JammanboPalette.muted)
@@ -147,14 +121,17 @@ struct PlanView: View {
                 .padding(.bottom, 32)
             }
             .scrollDismissesKeyboard(.interactively)
+            .onChange(of: eventTime) { _, _ in eventTitleFocused = false }
+            .onChange(of: planStore.wakeMinutes) { _, _ in eventTitleFocused = false }
+            .onChange(of: planStore.sleepGoalMinutes) { _, _ in eventTitleFocused = false }
             .background(JammanboPalette.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("완료") {
-                    eventTitleFocused = false
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("완료") {
+                        eventTitleFocused = false
+                    }
                 }
             }
         }
@@ -162,30 +139,17 @@ struct PlanView: View {
 
     private var wakeBinding: Binding<Date> {
         Binding(
-            get: { wakeTime },
+            get: { planStore.wakeTime() },
             set: { newValue in
                 let parts = Calendar.current.dateComponents([.hour, .minute], from: newValue)
-                wakeMinutes = (parts.hour ?? 7) * 60 + (parts.minute ?? 0)
+                planStore.wakeMinutes = (parts.hour ?? 7) * 60 + (parts.minute ?? 0)
             }
         )
     }
 
     private func addEvent() {
-        let title = eventTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        events.append(PlanEvent(title: title, time: eventTime))
-        saveEvents()
-        eventTitle = ""
-    }
-
-    private func saveEvents() {
-        guard let data = try? JSONEncoder().encode(events) else { return }
-        UserDefaults.standard.set(data, forKey: "jammanbo.planEvents.v1")
-    }
-
-    private static func loadEvents() -> [PlanEvent] {
-        guard let data = UserDefaults.standard.data(forKey: "jammanbo.planEvents.v1"),
-              let events = try? JSONDecoder().decode([PlanEvent].self, from: data) else { return [] }
-        return events
+        if planStore.addEvent(title: eventTitle, time: eventTime) {
+            eventTitle = ""
+        }
     }
 }

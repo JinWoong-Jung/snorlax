@@ -1,0 +1,40 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad="0.25", nodesep="0.35", ranksep="0.55", splines=polyline];
+ node [fontname="Apple SD Gothic Neo", fontsize=16, shape=box, style="rounded,filled", fillcolor="#E5F3EF", color="#38816C", margin="0.17,0.12"];
+ edge [fontname="Apple SD Gothic Neo", fontsize=12, color="#3C5267", arrowsize=0.7];
+ health [label="HealthKit", fillcolor="#FFFFFF", color="#8C9AAA"];
+ phone [label="사용자 입력", fillcolor="#FFFFFF", color="#8C9AAA"];
+ watch [label="Watch 입력", fillcolor="#FFFFFF", color="#8C9AAA"];
+ p1 [label="P1 수면 수집\n정규화"];
+ p2 [label="P2 체크인\n관리"];
+ p5 [label="P5 목표와\n일정 관리"];
+ d1 [label="D1 수면 상태\n메모리", shape=cylinder, fillcolor="#F0EEFA", color="#8C80B0"];
+ d2 [label="D2 체크인\nUserDefaults", shape=cylinder, fillcolor="#F0EEFA", color="#8C80B0"];
+ d3 [label="D3 목표와 일정\nUserDefaults", shape=cylinder, fillcolor="#F0EEFA", color="#8C80B0"];
+ d4 [label="D4 Watch 대기열\niPhone 확인 전", shape=cylinder, fillcolor="#F0EEFA", color="#8C80B0"];
+ p3 [label="P3 대시보드\n조회"];
+ p4 [label="P4 기록 질문\n생활습관 비교"];
+ p6 [label="P6 최근 요약\nPDF 생성"];
+ result [label="사용자\n화면과 답변", fillcolor="#FFFFFF", color="#8C9AAA"];
+ pdf [label="사용자가 선택한\n외부 공유 대상", fillcolor="#FFFFFF", color="#8C9AAA"];
+ health -> p1 [label="F1 샘플"];
+ p1 -> health [label="읽기 조회 요청"];
+ phone -> p2 [label="F3 체크인"];
+ watch -> p2 [label="Watch 체크인"];
+ p2 -> d4 [label="F4 체크인·확인", dir=both];
+ phone -> p5 [label="F7 목표·일정"];
+ p1 -> d1 [label="F2 SleepNight"];
+ p2 -> d2 [label="CheckIn 목록"];
+ p5 -> d3 [label="설정·일정", dir=both];
+ d1 -> p3 [label="F2 수면"]; d1 -> p4 [label="F2 수면"]; d1 -> p6 [label="F2 수면"];
+ d2 -> p4 [label="체크인"]; d2 -> p6 [label="체크인"];
+ d3 -> p3 [label="목표"];
+ phone -> p4 [label="F5 질문", constraint=false];
+ p3 -> result [label="대시보드"]; p4 -> result [label="F6 답변·근거"];
+ p5 -> result [label="취침 목표", constraint=false];
+ p6 -> pdf [label="사용자 선택 후 PDF"];
+ {rank=same; health; phone; watch;}
+ {rank=same; p1; p2; p5;}
+ {rank=same; d1; d2; d3;}
+ {rank=same; p3; p4; p6;}
+}
