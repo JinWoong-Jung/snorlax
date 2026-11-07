@@ -1,0 +1,86 @@
+[
+  {
+    "scene": "home",
+    "source_start": 2,
+    "source_duration": 7,
+    "final_duration": 7
+  },
+  {
+    "scene": "sleep-history",
+    "source_start": 17.55,
+    "source_duration": 0.6,
+    "final_duration": 3
+  },
+  {
+    "scene": "sleep-detail",
+    "source_start": 18.8,
+    "source_duration": 3,
+    "final_duration": 3
+  },
+  {
+    "scene": "checkin-open",
+    "source_start": 28,
+    "source_duration": 2,
+    "final_duration": 2
+  },
+  {
+    "scene": "checkin-choices",
+    "source_start": 39.4,
+    "source_duration": 4,
+    "final_duration": 4
+  },
+  {
+    "scene": "checkin-save",
+    "source_start": 55.2,
+    "source_duration": 3,
+    "final_duration": 4
+  },
+  {
+    "scene": "question-open",
+    "source_start": 58.6,
+    "source_duration": 2,
+    "final_duration": 2
+  },
+  {
+    "scene": "question-answer",
+    "source_start": 72.1,
+    "source_duration": 0.13,
+    "final_duration": 6
+  },
+  {
+    "scene": "plan-open",
+    "source_start": 72.6,
+    "source_duration": 3,
+    "final_duration": 3
+  },
+  {
+    "scene": "goal-change",
+    "source_start": 83.5,
+    "source_duration": 5,
+    "final_duration": 5
+  },
+  {
+    "scene": "event-input",
+    "source_start": 113.4,
+    "source_duration": 3,
+    "final_duration": 3
+  },
+  {
+    "scene": "event-save",
+    "source_start": 120,
+    "source_duration": 4,
+    "final_duration": 4
+  },
+  {
+    "scene": "summary",
+    "source_start": 128.8,
+    "source_duration": 4,
+    "final_duration": 4
+  },
+  {
+    "scene": "pdf-preview",
+    "source_start": 134.8,
+    "source_duration": 9.65,
+    "final_duration": 10
+  }
+]

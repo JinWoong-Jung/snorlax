@@ -38,7 +38,7 @@ JammanboWatchApp → WatchHomeView → WatchSessionStore
 | UI/UX 기획안 | [02_Jammanbo_UIUX.pptx](02_Jammanbo_UIUX.pptx), 동일 내용의 [v5 원본](output/pptx/02_Jammanbo_UIUX_v5.pptx) | [UI/UX PDF](output/pdf/02_Jammanbo_UIUX.pdf) |
 | SSAD 구조 명세 | [03_Jammanbo_SSAD.docx](03_Jammanbo_SSAD.docx), [GitHub 열람용 구조 문서](docs/architecture/Application_Structure.md) | [SSAD PDF](output/pdf/03_Jammanbo_SSAD.pdf) |
 | 고객 검증 계획과 빈 기록 양식 | [05_Jammanbo_Customer_Validation.docx](05_Jammanbo_Customer_Validation.docx) | [테스트 패킷](docs/user-test/Customer_Test_Packet.md) |
-| 시연 영상 | [1분 대본과 촬영 절차](docs/submission/One_Minute_Demo_Script.md) | 촬영·업로드 및 링크 기록 필요 |
+| 시연 영상 | [1분 대본과 촬영 절차](docs/submission/One_Minute_Demo_Script.md) | 60초 로컬 영상 제작 완료 · YouTube 업로드·링크 기록 필요 |
 | 코드 검토 | [SSAD 반영 내역과 검증 상태](docs/qa/SSAD_Alignment_Review.md) | [다른 AI 에이전트용 검토 안내](docs/qa/AI_Review_Guide.md) |
 
 SSRD는 무엇을 만들고 검수할지, UI/UX 기획안은 화면과 사용자 흐름을, SSAD는 데이터·모듈·외부 시스템의 관계와 내부 규칙을 설명합니다. 과제에 언급된 MBOX 원본은 저장소에서 확인되지 않아 `9주차/`의 UI/UX·MBASE 예시를 참고합니다. MBOX의 약어 풀이는 확정하지 않았습니다.
@@ -75,7 +75,8 @@ xcodebuild -project Jammanbo.xcodeproj -scheme Jammanbo \
 
 - 요구사항·화면·아키텍처 문서와 테스트·시연 양식을 정리했습니다.
 - 사용자가 본인 iPhone에서 앱 실행을 확인했습니다. HealthKit의 실제 결과와 Watch 전달을 모두 검증한 상태로 간주하지 않습니다.
-- 실제 참여자의 과업 결과와 분석 보고서, 촬영한 시연 영상·YouTube 링크는 아직 없습니다.
+- 자막·오디오 없는 60초 시연 영상을 제작했습니다. [촬영·검수 기록](docs/submission/Video_Recording.md)을 참고하세요.
+- 실제 참여자의 과업 결과와 분석 보고서, YouTube 업로드 링크는 아직 없습니다.
 - 수면 정규화·저장·전송 큐·PDF 무효화 등 자동 검사 61개와 iPhone·Watch 전체 빌드가 통과했습니다. 별도 Mac Catalyst 검증 앱에서 이력·수정·재실행·질문·PDF 흐름도 확인했습니다.
 - 구현 내역과 실기기 검증 목록은 [기능 구현 보고서](docs/qa/Functional_Implementation_2026-11-07.md)를 참고합니다. 실제 HealthKit·Watch 전달·iPhone 소프트웨어 키보드는 기기 확인이 남아 있습니다.
 
