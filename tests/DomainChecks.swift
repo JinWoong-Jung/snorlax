@@ -173,6 +173,118 @@ struct DomainChecks {
         shouldFailExport = true
         do { try failingExports.prepare(changedSummary); expect(false, "Export failure should throw") }
         catch { expect(failingExports.document == nil, "Export failure cannot leave an old PDF available for sharing") }
+        // P03: exercise is explicitly tri-state and old files never become exercise=false.
+        let legacyCheck = CheckIn(mood: "old-mood", stress: "보통", caffeine: false, source: "iPhone")
+        var legacyObject = try JSONSerialization.jsonObject(with: JSONEncoder().encode(legacyCheck)) as! [String: Any]
+        legacyObject.removeValue(forKey: "exercise")
+        let legacyRecord = try JSONDecoder().decode(CheckIn.self, from: JSONSerialization.data(withJSONObject: legacyObject))
+        expect(legacyRecord.exercise == nil, "Old check-ins retain exercise as unrecorded")
+        let exercised = CheckIn(date: day(0).addingTimeInterval(5), mood: "private-mood", stress: "높음", caffeine: true, source: "iPhone", exercise: true)
+        let exerciseRepo = CheckInRepository(defaults: defaults)
+        exerciseRepo.insert(exercised)
+        expect(CheckInRepository(defaults: defaults).records.first(where: { $0.id == exercised.id })?.exercise == true, "Exercise persists through reload")
+        exerciseRepo.update(id: exercised.id, mood: "changed", stress: "낮음", caffeine: false, exercise: false)
+        expect(CheckInRepository(defaults: defaults).records.first(where: { $0.id == exercised.id })?.exercise == false, "Exercise edits persist")
+        let exerciseMessage = CheckInMessage(timestamp: now.timeIntervalSince1970, mood: "괜찮아요", stress: "보통", caffeine: false, exercise: true)
+        expect(CheckInMessage(payload: exerciseMessage.payload)?.exercise == true, "Exercise survives Watch wire format")
+        let persistedExerciseMessage = try JSONDecoder().decode(CheckInMessage.self, from: JSONEncoder().encode(exerciseMessage))
+        expect(persistedExerciseMessage.exercise == true, "Exercise survives persistent Watch queue format")
+        var badExercise = exerciseMessage.payload; badExercise["exercise"] = "yes"
+        expect(CheckInMessage(payload: badExercise) == nil, "Malformed exercise payload is rejected")
+        let exerciseHabits = (0...3).map { i in CheckIn(date: day(-i).addingTimeInterval(10), mood: "괜찮아요", stress: i < 2 ? "높음" : "낮음", caffeine: i < 2, source: "iPhone", exercise: i < 2) }
+        let exerciseSummary = summary(nights, exerciseHabits)
+        for query in ["운동한 날 수면이 달랐나?", "산책하고 더 잤을까", "러닝 한 날 잠은?", "workout days sleep"] {
+            let answer = AnalysisService.answer(question: query, summary: exerciseSummary, calendar: calendar)
+            expect(answer.text.contains("2시간 0분 짧았습니다") && answer.text.contains("있음 2일 평균"), "Exercise paraphrases show both means and their actual difference")
+        }
+        let exerciseAnswer = AnalysisService.answer(question: "운동과 수면", summary: exerciseSummary, calendar: calendar)
+        expect(exerciseAnswer.evidence.contains("통계적 유의성 기준이 아닙니다") && exerciseAnswer.text.contains("판정한 결과가 아닙니다"), "Comparison never invents significance criteria")
+        expect(exerciseAnswer.evidence.contains("종류·강도별 비교는 아닙니다"), "Exercise aliases cannot imply type-specific measurements")
+        let missingExercise = exerciseHabits.map { CheckIn(id: $0.id, date: $0.date, mood: $0.mood, stress: $0.stress, caffeine: $0.caffeine, source: $0.source) }
+        let missingAnswer = AnalysisService.answer(question: "운동한 날 차이", summary: summary(nights, missingExercise), calendar: calendar)
+        expect(missingAnswer.evidence.contains("미기록 제외 4일") && missingAnswer.text.contains("없음 0일"), "Unknown exercise cannot become an unexposed control group")
+        for query in ["커피 마신 날 덜 잤어?", "caffeine and sleep"] {
+            expect(AnalysisService.answer(question: query, summary: exerciseSummary, calendar: calendar).text.contains("2시간 0분 짧았습니다"), "Caffeine synonyms")
+        }
+        expect(AnalysisService.answer(question: "긴장했던 날 잠", summary: exerciseSummary, calendar: calendar).text.contains("높은 스트레스"), "Stress synonyms")
+        expect(AnalysisService.answer(question: "요즘 몇 시간 자?", summary: exerciseSummary).text.contains("평균"), "Average paraphrase")
+        expect(AnalysisService.answer(question: "운동하고 커피 마신 날", summary: exerciseSummary).evidence.contains("조건 선택"), "Multiple factors request clarification instead of choosing one silently")
+        expect(AnalysisService.answer(question: "어떤 기준으로 의미 있는 변화야?", summary: exerciseSummary).text.contains("통계적 유의성 기준이 아닙니다"), "Criteria question is supported")
+
+        // P05: choose a waking day and use actual event ends, including cross-midnight events.
+        let planSuite = "jammanbo.plan-feedback.\(UUID().uuidString)"
+        let planDefaults = UserDefaults(suiteName: planSuite)!
+        defer { planDefaults.removePersistentDomain(forName: planSuite) }
+        let adjustedPlan = PlanStore(defaults: planDefaults)
+        let basePlan = adjustedPlan.recommendation(forWakeDate: day(1), calendar: calendar)
+        expect(basePlan.baseBedtime == day(0).addingTimeInterval(23 * 3600) && basePlan.availableMinutes == 480, "Tomorrow waking date plans tonight's sleep")
+        adjustedPlan.addEvent(title: "저녁 약속", time: day(0).addingTimeInterval(22 * 3600), endTime: day(1))
+        let dinner = adjustedPlan.recommendation(forWakeDate: day(1), calendar: calendar)
+        expect(dinner.bedtime == day(1).addingTimeInterval(30 * 60) && dinner.shortfallMinutes == 90 && dinner.availableMinutes == 390, "Dinner shifts bedtime to 00:30 with a 90-minute shortfall")
+        expect(dinner.fullGoalWake == day(1).addingTimeInterval(8.5 * 3600) && adjustedPlan.wakeMinutes == 420, "Alternative wake preserves sleep goal without silently changing user's wake target")
+        expect(PlanStore(defaults: planDefaults).recommendation(forWakeDate: day(1), calendar: calendar).bedtime == dinner.bedtime, "Event end and recommendation survive restart")
+        adjustedPlan.addEvent(title: "이어지는 약속", time: day(1), endTime: day(1).addingTimeInterval(3600))
+        expect(adjustedPlan.recommendation(forWakeDate: day(1), calendar: calendar).bedtime == day(1).addingTimeInterval(1.5 * 3600), "Multiple overlapping events use the latest end plus buffer")
+        expect(!adjustedPlan.recommendation(forWakeDate: day(2), calendar: calendar).isAdjusted, "Events from another night cannot shift this night's suggestion")
+        expect(!adjustedPlan.addEvent(title: "reversed", time: day(0), endTime: day(-1)), "Reject reversed event intervals")
+        let removeIDs = adjustedPlan.events.map(\.id)
+        for id in removeIDs { adjustedPlan.removeEvent(id: id) }
+        expect(!adjustedPlan.recommendation(forWakeDate: day(1), calendar: calendar).isAdjusted, "Deleting conflict restores base suggestion")
+        adjustedPlan.addEvent(title: "일찍 끝나는 일정", time: day(0).addingTimeInterval(19 * 3600), endTime: day(0).addingTimeInterval(21 * 3600))
+        expect(!adjustedPlan.recommendation(forWakeDate: day(1), calendar: calendar).isAdjusted, "Nonconflicting earlier event does not shift bedtime")
+        adjustedPlan.addEvent(title: "밤샘", time: day(0).addingTimeInterval(23 * 3600), endTime: day(1).addingTimeInterval(8 * 3600))
+        expect(adjustedPlan.recommendation(forWakeDate: day(1), calendar: calendar).availableMinutes == 0, "All-night event reports no available sleep instead of a negative duration")
+        let oldEvent = PlanEvent(title: "legacy", time: now)
+        var oldEventObject = try JSONSerialization.jsonObject(with: JSONEncoder().encode(oldEvent)) as! [String: Any]
+        oldEventObject.removeValue(forKey: "endTime")
+        let migratedEvent = try JSONDecoder().decode(PlanEvent.self, from: JSONSerialization.data(withJSONObject: oldEventObject))
+        expect(migratedEvent.endTime.timeIntervalSince(migratedEvent.time) == 3600, "Legacy events migrate with a visible one-hour duration")
+
+        // P05: privacy projection is the generator's only input; consent gates every share attempt.
+        let privacySummary = summary([night(0), night(-1)], [exercised])
+        var options = ReportExportOptions(summary: privacySummary, calendar: calendar)
+        let defaultProjection = try privacySummary.export(options: options, calendar: calendar)
+        expect(defaultProjection.checkInRows.isEmpty && !defaultProjection.includesCheckIns && defaultProjection.sleepRows.allSatisfy { $0.stages == nil }, "Default export excludes all check-ins and sleep stages")
+        options.dates = [day(-1)]
+        let oneDay = try privacySummary.export(options: options, calendar: calendar)
+        expect(oneDay.sleepRows.count == 1 && oneDay.sleepRows[0].date == day(-1), "Only explicitly selected dates export")
+        options.dates = [day(0)]; options.includeSleepTotals = false; options.includeSleepStages = true
+        let stagesOnly = try privacySummary.export(options: options, calendar: calendar)
+        expect(stagesOnly.averageMinutes == nil && stagesOnly.sleepRows[0].totalMinutes == nil && stagesOnly.sleepRows[0].stages != nil, "Stages-only export cannot leak total or average")
+        options.includeSleepStages = false; options.checkInFields = [.exercise]
+        let exerciseOnly = try privacySummary.export(options: options, calendar: calendar)
+        expect(exerciseOnly.sleepRows.isEmpty && exerciseOnly.checkInRows[0].fields == ["전날 운동 있음"] && exerciseOnly.source == "사용자 체크인", "Exercise-only export contains no mood, caffeine, stress or sleep")
+        options.checkInFields = [.mood, .caffeine]
+        let partial = try privacySummary.export(options: options, calendar: calendar)
+        expect(partial.checkInRows[0].fields == ["기분: private-mood", "오후 카페인: 있음"], "Only selected individual check-in fields export")
+        options.checkInFields = []
+        do { _ = try privacySummary.export(options: options); expect(false, "Cannot export no fields") }
+        catch { expect(true, "Empty field selection rejected") }
+        options.includeSleepTotals = true; options.dates = []
+        do { _ = try privacySummary.export(options: options); expect(false, "Cannot export no dates") }
+        catch { expect(true, "Empty date selection rejected") }
+        options.dates = [day(-6)]
+        do { _ = try privacySummary.export(options: options); expect(false, "Cannot export absent data") }
+        catch { expect(true, "No records in selection rejected") }
+        var generatedProjection: ExportReport?
+        let privacyExports = ReportExportStore { projected in generatedProjection = projected; return URL(fileURLWithPath: "/tmp/selected-only.pdf") }
+        options = ReportExportOptions(summary: privacySummary, calendar: calendar)
+        options.includeSleepTotals = false; options.checkInFields = [.exercise]
+        let selectedDocument = try privacyExports.prepare(privacySummary, options: options)
+        expect(generatedProjection?.sleepRows.isEmpty == true && generatedProjection?.checkInRows.first?.fields == ["전날 운동 있음"], "PDF generator receives a sanitized projection, never the raw summary")
+        do { _ = try privacyExports.authorizeSharing(documentID: selectedDocument.id, currentContent: privacySummary.content, consent: false); expect(false, "No consent cannot open sharing") }
+        catch { expect(true, "Consent required") }
+        let authorizedURL = try privacyExports.authorizeSharing(documentID: selectedDocument.id, currentContent: privacySummary.content, consent: true)
+        expect(authorizedURL == selectedDocument.url, "Matching explicit consent authorizes the exact prepared PDF")
+        do { _ = try privacyExports.authorizeSharing(documentID: selectedDocument.id, currentContent: changedSummary.content, consent: true); expect(false, "Changed data cannot share old PDF") }
+        catch { expect(privacyExports.document == nil, "Changed content invalidates pending consent and document") }
+        let replacement = try privacyExports.prepare(privacySummary, options: options)
+        do { _ = try privacyExports.authorizeSharing(documentID: selectedDocument.id, currentContent: privacySummary.content, consent: true); expect(false, "Old document ID cannot authorize a newer export") }
+        catch { expect(true, "Old consent/document ID rejected") }
+        _ = try privacyExports.prepare(privacySummary, options: options)
+        privacyExports.reset()
+        do { _ = try privacyExports.authorizeSharing(documentID: replacement.id, currentContent: privacySummary.content, consent: true); expect(false, "Cancelled export cannot be shared") }
+        catch { expect(true, "Cancel clears pending export") }
         print("Passed \(checks) domain checks")
     }
 }

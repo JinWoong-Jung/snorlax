@@ -22,13 +22,13 @@ final class CheckInStore: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
-    func saveFromPhone(mood: String, stress: String, caffeine: Bool) {
-        repository.insert(CheckIn(mood: mood, stress: stress, caffeine: caffeine, source: "iPhone"))
+    func saveFromPhone(mood: String, stress: String, caffeine: Bool, exercise: Bool? = nil) {
+        repository.insert(CheckIn(mood: mood, stress: stress, caffeine: caffeine, source: "iPhone", exercise: exercise))
         records = repository.records
     }
 
-    func update(id: UUID, mood: String, stress: String, caffeine: Bool) {
-        repository.update(id: id, mood: mood, stress: stress, caffeine: caffeine)
+    func update(id: UUID, mood: String, stress: String, caffeine: Bool, exercise: Bool? = nil) {
+        repository.update(id: id, mood: mood, stress: stress, caffeine: caffeine, exercise: exercise)
         records = repository.records
     }
 
@@ -42,7 +42,7 @@ final class CheckInStore: NSObject, ObservableObject, WCSessionDelegate {
         var payload = payload
         if payload["id"] == nil { payload["id"] = UUID().uuidString }
         guard let item = CheckInMessage(payload: payload) else { return }
-        repository.insert(CheckIn(id: item.id, date: Date(timeIntervalSince1970: item.timestamp), mood: item.mood, stress: item.stress, caffeine: item.caffeine, source: "Apple Watch"))
+        repository.insert(CheckIn(id: item.id, date: Date(timeIntervalSince1970: item.timestamp), mood: item.mood, stress: item.stress, caffeine: item.caffeine, source: "Apple Watch", exercise: item.exercise))
         records = repository.records
         pendingReceipts.insert(item.id)
         flushReceipts()

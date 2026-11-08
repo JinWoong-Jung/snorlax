@@ -7,7 +7,9 @@ struct AskView: View {
     @State private var answer: AnswerCard?
     @FocusState private var questionFieldFocused: Bool
 
-    private let suggestions = ["최근 평균 수면은?", "깊은 잠은 얼마나 잤어?", "카페인과 수면을 비교해줘"]
+    private var summary: ReportSummary { ReportSummary(nights: sleepStore.nights, checkIns: checkInStore.records, source: sleepStore.sourceLabel) }
+
+    private let suggestions = ["최근 평균 수면은?", "깊은 잠은 얼마나 잤어?", "카페인과 수면을 비교해줘", "운동한 날 수면이 달랐나?", "스트레스 높았던 날은?", "어떤 기준으로 비교해?"]
 
     var body: some View {
         NavigationStack {
@@ -89,6 +91,11 @@ struct AskView: View {
                         }
                     }
 
+                    Text("운동·커피·긴장 등 다른 표현으로도 질문할 수 있어요. 지원 항목을 기기 안의 규칙으로 해석합니다.")
+                        .font(.caption).foregroundStyle(JammanboPalette.muted)
+                    DisclosureGroup("비교 계산 기준") {
+                        Text(AnalysisService.comparisonPolicy).font(.caption).foregroundStyle(JammanboPalette.muted)
+                    }
                     Text("잠만보는 기록을 요약하며 수면 상태를 진단하지 않습니다.")
                         .font(.caption2)
                         .foregroundStyle(JammanboPalette.muted)
@@ -97,6 +104,7 @@ struct AskView: View {
                 .padding(.top, 18)
                 .padding(.bottom, 32)
             }
+            .onChange(of: summary.content) { _, _ in if answer != nil { ask() } }
             .scrollDismissesKeyboard(.interactively)
             .background(JammanboPalette.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
@@ -112,7 +120,6 @@ struct AskView: View {
     }
 
     private func ask() {
-        let summary = ReportSummary(nights: sleepStore.nights, checkIns: checkInStore.records, source: sleepStore.sourceLabel)
         answer = AnalysisService.answer(question: question, summary: summary)
     }
 }

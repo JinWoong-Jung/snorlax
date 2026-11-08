@@ -3,10 +3,7 @@ import SwiftUI
 struct SummaryView: View {
     @EnvironmentObject private var sleepStore: SleepStore
     @EnvironmentObject private var checkInStore: CheckInStore
-    @StateObject private var exportStore = ReportExportStore(generate: ReportPDFGenerator.create)
-    @State private var previewDocument: ReportDocument?
-    @State private var sharingDocument: ReportDocument?
-    @State private var exportError: String?
+    @State private var choosingData = false
 
     private var summary: ReportSummary {
         ReportSummary(nights: sleepStore.nights, checkIns: checkInStore.records, source: sleepStore.sourceLabel)
@@ -21,7 +18,7 @@ struct SummaryView: View {
                     VStack(alignment: .leading, spacing: 7) {
                         Text("상담용 요약")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
-                        Text("최근 7일 기록을 한 페이지로 정리해요.")
+                        Text("최근 7일 중 공유할 날짜와 항목을 직접 선택해요.")
                             .font(.subheadline)
                             .foregroundStyle(JammanboPalette.muted)
                     }
@@ -57,31 +54,14 @@ struct SummaryView: View {
                         }
                     }
 
-                    Button(action: exportPDF) {
-                        Label("PDF 만들고 미리보기", systemImage: "doc.text.magnifyingglass")
-                            .font(.headline)
-                            .foregroundStyle(JammanboPalette.background)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
+                    Button { choosingData = true } label: {
+                        Label("공유할 데이터 선택", systemImage: "checklist")
+                            .font(.headline).foregroundStyle(JammanboPalette.background)
+                            .frame(maxWidth: .infinity).padding(.vertical, 16)
                             .background(JammanboPalette.accent, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-
-                    if let document = exportStore.document, document.content == summary.content {
-                        Button(action: sharePDF) {
-                            Label("PDF 공유하기", systemImage: "doc.richtext")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(JammanboPalette.accent)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                        }
-                    }
-
-                    if let exportError {
-                        Text(exportError)
-                            .font(.caption)
-                            .foregroundStyle(JammanboPalette.coral)
-                    }
+                    }.buttonStyle(.plain)
+                    Text("데이터 선택 → PDF 미리보기 → 최종 동의 → 공유 대상 선택. 자동 전송하지 않습니다.")
+                        .font(.caption).foregroundStyle(JammanboPalette.muted)
 
                     Text("요약은 상담 대화를 돕기 위한 참고 자료이며 진단·치료 결과를 의미하지 않습니다. 공유 전에 내용과 수신자를 확인해 주세요.")
                         .font(.caption2)
@@ -95,12 +75,7 @@ struct SummaryView: View {
             .background(JammanboPalette.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
         }
-        .sheet(item: $previewDocument) { PDFPreviewSheet(document: $0) }
-        .sheet(item: $sharingDocument) { PDFShareSheet(url: $0.url) }
-        .onChange(of: summary.content) { _, content in
-            exportStore.synchronize(with: content)
-            previewDocument = nil
-        }
+        .sheet(isPresented: $choosingData) { ReportExportFlow() }
     }
 
     private func metricRow(_ title: String, value: String) -> some View {
@@ -115,21 +90,4 @@ struct SummaryView: View {
         }
     }
 
-    private func exportPDF() {
-        do {
-            previewDocument = try exportStore.prepare(summary)
-            exportError = nil
-        } catch {
-            exportError = "PDF를 만들지 못했습니다. 다시 시도해 주세요."
-        }
-    }
-
-    private func sharePDF() {
-        do {
-            sharingDocument = try exportStore.prepare(summary)
-            exportError = nil
-        } catch {
-            exportError = "PDF를 만들지 못했습니다. 다시 시도해 주세요."
-        }
-    }
 }

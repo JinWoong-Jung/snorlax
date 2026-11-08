@@ -5,6 +5,7 @@ struct CheckInView: View {
     @State private var mood = "괜찮아요"
     @State private var stress = "보통"
     @State private var caffeine = false
+    @State private var exercise: Bool? = nil
     @State private var savedMessage: String?
 
     private let moods = ["개운해요", "괜찮아요", "피곤해요"]
@@ -46,11 +47,19 @@ struct CheckInView: View {
                                 }
                             }
                             .tint(JammanboPalette.accent)
+                            Picker("전날 운동", selection: $exercise) {
+                                Text("미기록").tag(Optional<Bool>.none)
+                                Text("했어요").tag(Optional(true))
+                                Text("안 했어요").tag(Optional(false))
+                            }
+                            .pickerStyle(.segmented)
+                            Text("전날 운동 여부 · 미기록은 비교에서 제외해요.")
+                                .font(.caption).foregroundStyle(JammanboPalette.muted)
                         }
                     }
 
                     Button {
-                        checkInStore.saveFromPhone(mood: mood, stress: stress, caffeine: caffeine)
+                        checkInStore.saveFromPhone(mood: mood, stress: stress, caffeine: caffeine, exercise: exercise)
                         savedMessage = "체크인을 저장했어요. 아래 최근 기록에서 확인할 수 있어요."
                     } label: {
                         HStack {
@@ -106,6 +115,7 @@ struct CheckInView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("\(record.mood) · 스트레스 \(record.stress)")
                                 .font(.subheadline.weight(.medium))
+                            Text(record.exerciseLabel).font(.caption).foregroundStyle(JammanboPalette.muted)
                             Text(record.date.formatted(.dateTime.month(.abbreviated).day().hour().minute()) + " · " + record.source)
                                 .font(.caption)
                                 .foregroundStyle(JammanboPalette.muted)

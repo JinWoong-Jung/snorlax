@@ -6,16 +6,18 @@ struct CheckInMessage: Codable, Equatable, Identifiable, Sendable {
     let mood: String
     let stress: String
     let caffeine: Bool
+    let exercise: Bool?
 
-    init(id: UUID = UUID(), timestamp: Double = Date.now.timeIntervalSince1970, mood: String, stress: String, caffeine: Bool) {
+    init(id: UUID = UUID(), timestamp: Double = Date.now.timeIntervalSince1970, mood: String, stress: String, caffeine: Bool, exercise: Bool? = nil) {
         self.id = id
         self.timestamp = timestamp
         self.mood = mood
         self.stress = stress
         self.caffeine = caffeine
+        self.exercise = exercise
     }
 
-    private enum CodingKeys: CodingKey { case id, timestamp, mood, stress, caffeine }
+    private enum CodingKeys: CodingKey { case id, timestamp, mood, stress, caffeine, exercise }
 
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -24,6 +26,7 @@ struct CheckInMessage: Codable, Equatable, Identifiable, Sendable {
         mood = try values.decode(String.self, forKey: .mood)
         stress = try values.decode(String.self, forKey: .stress)
         caffeine = try values.decode(Bool.self, forKey: .caffeine)
+        exercise = try values.decodeIfPresent(Bool.self, forKey: .exercise)
     }
 
     init?(payload: [String: Any]) {
@@ -33,11 +36,14 @@ struct CheckInMessage: Codable, Equatable, Identifiable, Sendable {
               let mood = payload["mood"] as? String, !mood.isEmpty, mood.count <= 80,
               let stress = payload["stress"] as? String, !stress.isEmpty, stress.count <= 80,
               let caffeine = payload["caffeine"] as? Bool else { return nil }
-        self.init(id: id, timestamp: timestamp, mood: mood, stress: stress, caffeine: caffeine)
+        guard payload["exercise"] == nil || payload["exercise"] is Bool else { return nil }
+        self.init(id: id, timestamp: timestamp, mood: mood, stress: stress, caffeine: caffeine, exercise: payload["exercise"] as? Bool)
     }
 
     var payload: [String: Any] {
-        ["kind": "checkIn", "id": id.uuidString, "timestamp": timestamp, "mood": mood, "stress": stress, "caffeine": caffeine]
+        var result: [String: Any] = ["kind": "checkIn", "id": id.uuidString, "timestamp": timestamp, "mood": mood, "stress": stress, "caffeine": caffeine]
+        if let exercise { result["exercise"] = exercise }
+        return result
     }
 
     static func receipt(for id: UUID) -> [String: Any] { ["kind": "checkInReceipt", "id": id.uuidString] }

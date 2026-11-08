@@ -66,7 +66,7 @@ struct SleepNightDetailView: View {
                         NavigationLink { CheckInDetailView(id: record.id) } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("\(record.mood) · 스트레스 \(record.stress)")
-                                Text("\(record.caffeine ? "오후 카페인 있음" : "오후 카페인 없음") · \(record.source)")
+                                Text("\(record.caffeine ? "오후 카페인 있음" : "오후 카페인 없음") · \(record.exerciseLabel) · \(record.source)")
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                         }

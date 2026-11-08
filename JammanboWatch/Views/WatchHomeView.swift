@@ -5,6 +5,7 @@ struct WatchHomeView: View {
     @State private var mood = "괜찮아요"
     @State private var stress = "보통"
     @State private var caffeine = false
+    @State private var exercise: Bool? = nil
 
     private let moods = ["개운해요", "괜찮아요", "피곤해요"]
     private let stressOptions = ["낮음", "보통", "높음"]
@@ -88,8 +89,14 @@ struct WatchHomeView: View {
                 }
                 .tint(caffeine ? .orange : .gray)
 
+                Picker("전날 운동", selection: $exercise) {
+                    Text("미기록").tag(Optional<Bool>.none)
+                    Text("있음").tag(Optional(true))
+                    Text("없음").tag(Optional(false))
+                }
+
                 Button {
-                    sessionStore.submit(mood: mood, stress: stress, caffeine: caffeine)
+                    sessionStore.submit(mood: mood, stress: stress, caffeine: caffeine, exercise: exercise)
                 } label: {
                     Text("체크인 저장")
                         .font(.caption.weight(.bold))

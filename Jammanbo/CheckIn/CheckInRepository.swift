@@ -27,10 +27,10 @@ final class CheckInRepository {
         return true
     }
 
-    func update(id: UUID, mood: String, stress: String, caffeine: Bool) {
+    func update(id: UUID, mood: String, stress: String, caffeine: Bool, exercise: Bool? = nil) {
         guard let index = records.firstIndex(where: { $0.id == id }) else { return }
         let old = records[index]
-        records[index] = CheckIn(id: old.id, date: old.date, mood: mood, stress: stress, caffeine: caffeine, source: old.source)
+        records[index] = CheckIn(id: old.id, date: old.date, mood: mood, stress: stress, caffeine: caffeine, source: old.source, exercise: exercise)
         persist()
     }
 

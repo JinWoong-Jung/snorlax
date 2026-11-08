@@ -26,9 +26,9 @@ final class WatchSessionStore: NSObject, ObservableObject, WCSessionDelegate {
         WCSession.default.activate()
     }
 
-    func submit(mood: String, stress: String, caffeine: Bool) {
+    func submit(mood: String, stress: String, caffeine: Bool, exercise: Bool? = nil) {
         do {
-            try outbox.enqueue(CheckInMessage(mood: mood, stress: stress, caffeine: caffeine))
+            try outbox.enqueue(CheckInMessage(mood: mood, stress: stress, caffeine: caffeine, exercise: exercise))
             pendingCount = outbox.pending.count
             status = "Watch에 저장했어요 · iPhone 저장 확인 대기"
             flushPendingCheckIns()

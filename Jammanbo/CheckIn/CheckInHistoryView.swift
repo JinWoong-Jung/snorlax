@@ -15,6 +15,7 @@ struct CheckInHistoryView: View {
                             Text("\(record.mood) · 스트레스 \(record.stress)")
                             Text(record.date.formatted(.dateTime.month().day().hour().minute()) + " · " + record.source)
                                 .font(.caption).foregroundStyle(.secondary)
+                            Text(record.exerciseLabel).font(.caption).foregroundStyle(.secondary)
                             Text(record.caffeine ? "오후 카페인 있음" : "오후 카페인 없음")
                                 .font(.caption).foregroundStyle(record.caffeine ? JammanboPalette.coral : JammanboPalette.muted)
                         }
@@ -40,6 +41,7 @@ struct CheckInDetailView: View {
     @State private var mood = "괜찮아요"
     @State private var stress = "보통"
     @State private var caffeine = false
+    @State private var exercise: Bool? = nil
     @State private var confirmDelete = false
     private var record: CheckIn? { store.records.first { $0.id == id } }
 
@@ -59,8 +61,13 @@ struct CheckInDetailView: View {
                         ForEach(["낮음", "보통", "높음"], id: \.self) { Text($0) }
                     }
                     Toggle("오후 카페인", isOn: $caffeine)
+                    Picker("전날 운동", selection: $exercise) {
+                        Text("미기록").tag(Optional<Bool>.none)
+                        Text("있음").tag(Optional(true))
+                        Text("없음").tag(Optional(false))
+                    }
                     Button("수정 내용 저장") {
-                        store.update(id: id, mood: mood, stress: stress, caffeine: caffeine)
+                        store.update(id: id, mood: mood, stress: stress, caffeine: caffeine, exercise: exercise)
                         dismiss()
                     }
                 }
@@ -77,7 +84,7 @@ struct CheckInDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
         .onAppear {
-            if let record { mood = record.mood; stress = record.stress; caffeine = record.caffeine }
+            if let record { mood = record.mood; stress = record.stress; caffeine = record.caffeine; exercise = record.exercise }
         }
         .confirmationDialog("이 체크인을 삭제할까요?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("삭제", role: .destructive) { store.remove(id: id); dismiss() }
