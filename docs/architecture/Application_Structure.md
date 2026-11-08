@@ -1,174 +1,209 @@
 # 잠만보 소프트웨어 구조와 애플리케이션 설계
 
-SSAD v1.3 · 2026-11-07
+SSAD · 버전 v1.4 · 2026-11-08 · Team 17
 
-> 2026-11-08 P03·P05 후속 변경: 운동·질문 표현·일정 조정·선택 PDF와 동의 흐름의 최신 설계는 [피드백 반영 명세](../qa/Feedback_P03_P05_2026-11-08.md)를 따른다. 아래 v1.3 본문과 기존 제출 DOCX·PDF는 변경 전 구조 기록이다.
-
-잠만보는 HealthKit 수면 기록과 iPhone 또는 Apple Watch의 생활습관 체크인을 연결하는 네이티브 프로토타입이다. 현재 구현은 기기 안에서 기록을 요약하고 목표 취침 시각을 계산하며 상담에 참고할 PDF를 만든다. 이 문서는 구조적 분석의 DFD, 모듈 구조, 자료 사전과 소단위 명세를 실제 Swift 구현에 연결한다.
+잠만보는 HealthKit 수면과 iPhone·Apple Watch 체크인을 연결하는 네이티브 앱이다. 이 문서는 DFD, 모듈 구조, 자료 사전과 소단위 명세를 Swift 구현에 연결한다. P03의 운동·비교 근거와 P05의 일정 연계·선택 공유·최종 동의를 반영했다.
 
 ## 1 제품 범위와 시스템 경계
 
 | 항목 | 현재 설계 |
 |---|---|
 | 실행 환경 | iOS 17 이상, watchOS 10 이상, SwiftUI |
-| 앱 구성 | Jammanbo iPhone 앱과 JammanboWatch 동반 앱. 첫 사용자 테스트는 iPhone 중심으로 진행하고 Watch 전달은 별도 검증한다. |
-| 외부 시스템 | HealthKit 읽기 전용 접근, 사용자가 선택한 시스템 공유 대상 |
-| 내부 처리 | WatchConnectivity 전달, 기기 내 규칙 계산, UserDefaults 저장, 임시 PDF 생성 |
-| 제외 범위 | 생성형 LLM, 외부 캘린더 동기화, 서버 계정, 클라우드 백업, 주간 일정 최적화 |
-| 실기기 상태 | 사용자 보고로 iPhone 앱 실행을 확인했다. HealthKit 결과, Watch 전달, 실제 사용자 과업 결과는 별도 검증이 필요하다. |
+| 앱 구성 | Jammanbo iPhone 앱 + JammanboWatch 동반 앱. 첫 검증은 iPhone 중심. |
+| 외부 시스템 | HealthKit 읽기 전용, 사용자가 최종 선택한 시스템 공유 대상 |
+| 내부 처리 | WatchConnectivity, 기기 내 규칙 계산, UserDefaults, 선택 데이터 PDF |
+| 제외 범위 | 생성형 LLM, 외부 캘린더 동기화, 서버 계정·클라우드, 주간 일정 최적화 |
+| 검증 경계 | 자동 검사 105개·서명 없는 빌드·iPhone 시뮬레이터 검증 완료. 개선 후 고객 재시험과 실제 Watch 전달은 미확인. |
 
-iPhone 앱과 Watch 앱을 함께 시스템 경계 안에 둔다. 문맥도에서 Watch 입력 주체는 Watch를 조작하는 사용자이며, Watch 앱 자체를 외부 시스템으로 해석하지 않는다. 상담자는 계정이나 직접 연결이 없고 사용자가 PDF를 공유한 경우에만 결과를 받는다.
+iPhone과 Watch 앱을 함께 시스템 경계 안에 둔다. Watch 입력 주체는 Watch를 조작하는 사용자다. 상담자는 앱 계정이나 직접 연결 API가 없으며, 사용자가 PDF를 외부 공유한 경우에만 결과를 받는다. 건강 데이터의 자동 외부 전송 경로는 없다.
+
+P03 비교는 같은 기상일의 관찰 평균이다. 계산 최소 표본과 근거를 노출하지만 통계적 유의성이나 임상적 효과를 판단하지 않는다. P05 일정은 사용자가 입력한 해당 밤의 일정만 반영하며, 공유는 사용자 선택·미리보기·동의를 모두 거친다.
 
 ## 2 문맥 DFD
 
-![사용자 HealthKit 공유 대상과 잠만보의 문맥 데이터 흐름](assets/context.png)
+![사용자·HealthKit·선택 공유 대상과 잠만보의 문맥 흐름](assets/context.png)
 
-사용자는 질문, 체크인, 목표와 일정을 입력하고 화면 결과를 받는다. HealthKit에는 읽기 권한과 조회를 요청하고 수면 분석 샘플을 받는다. 외부 공유는 사용자가 생성한 PDF에 대해 공유 시트에서 대상을 선택할 때만 시작된다.
-
-| 흐름 | 입력 또는 출력 | 경계 |
+| 흐름 | 자료 구성 | 경계 |
 |---|---|---|
-| 사용자 입력 | 질문, 체크인, 수면 목표, 수동 일정 | 사용자에서 앱으로 |
-| 사용자 결과 | 대시보드, 답변과 근거, 취침 목표, 요약 | 앱에서 사용자로 |
-| 수면 조회 | 권한 및 조회 요청, HKCategorySample 목록 | 앱과 HealthKit 사이 |
-| 선택적 공유 | 요약 PDF | 앱에서 사용자가 고른 외부 대상으로 |
+| 사용자 입력 | 질문, 운동 포함 체크인, 기상 날짜·목표, 시작·종료 일정, 공유 선택·동의 | 사용자 → 앱 |
+| 사용자 결과 | 수면·출처, 비교 근거, 일정 반영 취침·부족 시간, 선택 PDF 미리보기 | 앱 → 사용자 |
+| 수면 조회 | 읽기 요청, HKCategorySample 목록 | 앱 ↔ HealthKit |
+| 선택적 공유 | 선택된 날짜·필드만 담은 PDF | 앱 → 사용자가 고른 외부 대상 |
+
+공유 데이터 선택과 최종 동의는 서로 다른 단계다. 동의는 파일을 자동 발송하는 명령이 아니라, 현재 미리보기 문서에 대해 시스템 공유 시트를 열도록 허용한다. 실제 앱·수신자·전송 여부는 사용자가 시스템 시트에서 결정한다.
 
 ## 3 Level 1 DFD
 
 ![여섯 프로세스와 내부 저장소의 데이터 흐름](assets/level1.png)
 
-| 프로세스 | 책임 | 주요 데이터 |
+| 프로세스 | 책임 | 주요 자료 |
 |---|---|---|
-| P1 수면 수집과 정규화 | 겹침을 제거하고 수면 세션의 기상일로 합산 | F1 수면 샘플에서 F2 SleepNight 목록으로 |
-| P2 체크인 관리 | iPhone 입력과 Watch 전송을 검증하고 UUID 중복 제거 | F3 폰 입력, F4 Watch payload, D2 체크인 |
-| P3 대시보드 조회 | 최근 수면, 제공된 단계, 목표 대비 비율 표시 | F2 수면 기록, D3 수면 목표 |
-| P4 기록 질문과 비교 | 질문 분류, 기록 평균, 단계 조회, 같은 날짜 비교 | F5 질문에서 F6 답변과 근거로 |
-| P5 목표와 일정 관리 | 취침 목표 계산, 수동 일정 추가와 삭제 | F7 목표와 일정, D3 로컬 저장 |
-| P6 요약과 PDF | 같은 기간으로 화면과 PDF 구성 | F8 ReportSummary에서 임시 PDF로 |
+| P1 수면 수집·정규화 | 출처 겹침 제거, 기상일 집계 | F1 샘플 → F2 SleepNight |
+| P2 체크인 관리 | 운동 미기록 보존, 폰 입력·Watch 검증·UUID 중복 제거 | F3 폰 입력, F4 Watch payload·확인 |
+| P3 대시보드 조회 | 최근 수면·단계·출처·목표 대비 비율 | D1 수면, D3 목표 |
+| P4 기록 질문·비교 | 표현 정규화, 평균·단계·습관 비교, 기준·근거 | F5 질문 → F6 답변 |
+| P5 목표·일정 관리 | 시작·종료 일정과 준비 30분을 반영한 취침 제안 | F7 목표·일정 → PlanRecommendation |
+| P6 선택 PDF·동의 | 선택 자료 투영, 다중 페이지, 문서 유효성·최종 동의 | F8 선택 자료, F9 공유 승인 |
 
-DFD 화살표는 자료의 이동을 나타낸다. 실행 순서나 함수 호출은 의미하지 않는다. D1은 수면 상태의 메모리 보관이며 UserDefaults에 수면 원본을 복사하지 않는다. D2는 기록 시각순 최근 30개 체크인과 별도의 수신 UUID 이력, D3은 목표와 일정, D4는 iPhone 저장 확인 응답을 기다리는 Watch 대기열이다.
+화살표는 자료 이동이며 실행 순서나 함수 호출이 아니다. D1은 메모리 수면 상태다. D2는 최근 30개 체크인과 별도 수신 UUID 이력, D3은 목표·일정, D4는 폰 저장 확인까지 유지하는 Watch 대기열이다. PDF 선택·동의는 영속 체크인 저장소와 분리된 일시 상태다.
 
 ## 4 애플리케이션 모듈 구조
 
-![iPhone Watch 구성과 화면 서비스 저장소의 의존 관계](assets/structure.png)
+![iPhone·Watch의 화면·서비스·저장소 의존 관계](assets/structure.png)
 
-JammanboApp은 SleepStore, CheckInStore, PlanStore를 생성하고 환경 객체로 주입한다. 화면은 사용자 상호작용과 표시를 담당한다. AskView는 AnalysisService에 계산을 위임하고 PlanView는 PlanStore를 통해 목표와 일정을 변경한다. ReportSummary는 질문, 요약 화면, PDF가 사용하는 최근 7일 범위를 공유한다.
-
-이 구조도는 SwiftUI의 구성과 의존 관계를 보여준다. 서로 다른 프로세스에서 실행되는 Watch 앱과 iPhone 앱 사이에는 직접 함수 호출이 없으며 WatchConnectivity 비동기 메시지만 전달한다.
+JammanboApp이 SleepStore·CheckInStore·PlanStore를 생성·주입한다. 화면은 표시·입력, 서비스는 계산·검증, 저장소는 보관을 담당한다. ReportSummary는 최근 7일 범위를 통일한다. PDF 생성에는 원본 대신 선택 필드만 담은 ExportReport를 넘긴다.
 
 | 모듈 | 역할 | 접근 경계 |
 |---|---|---|
-| SleepStore / SleepNormalizer | 권한, 자동 조회, 출처 겹침 제거, 세션별 집계 | HKHealthStore / Foundation 계산 |
-| CheckInStore / CheckInRepository | 폰 입력·수정·삭제, Watch 수신 확인, 최근 30건 보관 | WCSession / 주입 가능한 UserDefaults |
-| WatchSessionStore / CheckInOutbox | 확인 응답까지 대기열 유지, 오류·미확인 재시도 | Watch UserDefaults와 WCSession |
-| CheckInMessage / DeliveryRetryState | 공통 payload·확인 응답, 중복 전송 방지와 재시도 시각 | 두 타깃의 Shared 코드 |
-| SleepHistoryView / CheckInHistoryView | 최근 7일 수면, 전체 체크인 목록과 상세 | 화면과 각 Store |
-| AnalysisService | 평균, 단계, 생활습관 비교와 근거 생성 | 전달받은 ReportSummary만 읽음 |
-| PlanStore | 목표와 일정의 상태, 계산, 로컬 저장 | UserDefaults를 주입 가능 |
-| ReportSummary | 최근 7개 달력 날짜의 수면과 체크인 필터 | Foundation 값 타입 |
-| ReportPDFGenerator | 화면과 같은 요약으로 PDF 렌더링 | UIKit과 임시 파일 |
-| ReportExportStore / PDFPreviewSheet | 내용 변경 시 PDF 무효화, 내부 미리보기와 공유 | 스냅샷 상태 / PDFKit·시스템 공유 시트 |
+| SleepStore / SleepNormalizer | 권한·조회·겹침 제거·기상일 집계 | HKHealthStore / Foundation |
+| CheckInStore / Repository | 입력·편집·운동 nil 보존·중복 제거 | WCSession / UserDefaults |
+| WatchSessionStore / CheckInOutbox | 확인 전 보관·재시도 | Watch UserDefaults / WCSession |
+| CheckInMessage / DeliveryRetryState | 공통 payload·확인·재시도 상태 | 두 타깃의 Shared 코드 |
+| AnalysisService / AskView | 표현 분류·계산·기준·근거 표시 | ReportSummary 읽기 |
+| PlanStore / PlanView | 목표·종료 일정·충돌 제안 | 주입 가능한 UserDefaults |
+| ReportSummary / ReportExportOptions | 범위 집계·공유 날짜와 필드 선택 | Foundation 값 타입 |
+| ReportExportFlow / ReportExportStore | 미리보기·동의·문서 유효성 검사 | 일시 상태·PDFKit·시스템 시트 |
+| ExportReport / ReportPDFGenerator | 선택 자료만 다중 페이지 PDF로 렌더링 | UIKit / 앱 임시 파일 |
 
-## 5 DFD와 코드와 요구사항 추적
+Watch와 폰 사이에는 직접 함수 호출이 없다. WatchConnectivity 비동기 자료·확인 응답만 오간다.
 
-| DFD | 구현 파일 | SSRD | 확인 과업 |
+## 5 DFD·코드·요구사항 추적
+
+| DFD | 구현 파일 | SSRD | 검증 과업 |
 |---|---|---|---|
-| P1과 P3 | Health/SleepStore.swift, SleepNormalizer.swift, SleepHistoryView.swift | FR-01, FR-02, FR-04 | T1 수면과 출처 |
-| P2 | CheckIn/CheckInStore.swift, CheckInRepository.swift, CheckInHistoryView.swift, WatchSessionStore.swift | FR-03, FR-04 | T2a 폰 체크인, T2b Watch 전달 |
-| P4 | Analysis/AnalysisService.swift, AskView.swift, Reporting/ReportSummary.swift | FR-05, FR-06, FR-07 | T3 질문과 근거 |
-| P5 | Planning/PlanStore.swift, PlanView.swift | FR-08, FR-09, FR-10 | T4 목표와 일정 |
-| P6 | Reporting/ReportSummary.swift, ReportExportStore.swift, PDFPreviewSheet.swift, ReportPDFGenerator.swift | FR-11, FR-12 | T5 요약과 PDF |
+| P1·P3 | Health/SleepStore.swift, SleepNormalizer.swift, SleepHistoryView.swift | FR-01·02·04 | T1 수면·출처 |
+| P2 | CheckIn/CheckInStore.swift, CheckInRepository.swift, CheckInHistoryView.swift; WatchSessionStore.swift | FR-03·04 | T2a 폰·T2b Watch |
+| P4 | Analysis/AnalysisService.swift, AskView.swift, Reporting/ReportSummary.swift | FR-05·06·07 | T3 운동·근거 |
+| P5 | Planning/PlanStore.swift, PlanView.swift | FR-08·09·10 | T4 자정 일정 |
+| P6 | Reporting/PDFPreviewSheet.swift, ReportExportStore.swift, ReportSummary.swift; ReportPDFGenerator.swift | FR-11·12, NFR-04 | T5 선택·동의 PDF |
 
-파일 경로의 기준은 iPhone 소스의 경우 Jammanbo이며 WatchSessionStore는 JammanboWatch/Connectivity에 있다. UI 과업 ID는 고객 테스트 패킷과 공유한다. AI 코드 리뷰는 보조 검토이며 실제 사용자의 과업 결과와 구분해 기록한다.
+iPhone 파일 경로는 Jammanbo 기준이며 WatchSessionStore는 JammanboWatch/Connectivity에 있다. 공통 전송 모델은 Shared 폴더에 있다. 고객 과업 ID는 UI/UX 기획안과 공유한다.
+
+P03는 운동 입력→동의어 질문→같은 날짜 결합→계산 근거 표시까지 P2·P4를 연결한다. P05 일정은 저장만으로 끝나지 않고 P5의 재계산 결과가 화면에 나타나야 한다. P05 공유는 P6에서 선택 자료와 승인된 현재 문서만 외부로 나가는 경계를 만든다.
 
 ## 6 자료 흐름 사전
 
-| ID | 자료 구성 | 발신과 수신 |
+| ID | 자료 구성 | 발신·수신 |
 |---|---|---|
-| F1 | HKCategorySample의 startDate, endDate, value 목록 | HealthKit에서 SleepStore |
-| F2 | SleepNight 목록과 sourceLabel, message | SleepStore에서 대시보드와 ReportSummary |
-| F3 | mood, stress, caffeine | CheckInView에서 CheckInStore |
-| F4 | id, timestamp, mood, stress, caffeine | WatchSessionStore에서 WCSession을 거쳐 CheckInStore |
-| F4 확인 응답 | kind=checkInReceipt, id | iPhone 저장·중복 확인 후 Watch 대기열로 |
-| F5 | question String | AskView에서 AnalysisService |
-| F6 | AnswerCard의 text, evidence | AnalysisService에서 AskView |
-| F7 | wakeMinutes, sleepGoalMinutes, PlanEvent 목록 | PlanView와 PlanStore 사이 |
-| F8 | ReportSummary 값 | SummaryView에서 ReportPDFGenerator |
+| F1 | HKCategorySample startDate·endDate·value | HealthKit → SleepStore |
+| F2 | SleepNight 목록, sourceLabel, message | SleepStore → 화면·ReportSummary |
+| F3 | mood, stress, caffeine, exercise Bool? | CheckInView → CheckInStore |
+| F4 | id, timestamp, mood, stress, caffeine, 선택 exercise | WatchSessionStore → WCSession → CheckInStore |
+| F4 확인 | kind=checkInReceipt, id | 폰 저장·중복 확인 → Watch 대기열 |
+| F5 | question String | AskView → AnalysisService |
+| F6 | AnswerCard text·evidence | AnalysisService → AskView |
+| F7 | wakeMinutes, sleepGoalMinutes, PlanEvent 목록; 화면의 wakeDate | PlanView ↔ PlanStore |
+| F8 | 선택 날짜·필드 ReportExportOptions → 선택값만 담은 ExportReport | ReportSummary.export → ReportPDFGenerator |
+| F9 | 최종 동의, 문서 UUID, 현재 ReportContent 스냅샷 | ReportExportFlow → authorizeSharing → 시스템 공유 시트 |
+
+F8의 투영은 단순 화면 숨김이 아니다. 제외한 원본 값은 PDF 생성기의 입력에 들어가지 않는다. F9 검사는 미리보기와 실제 공유 대상 파일이 현재 선택·기록에 대응하는지 확인한다. 동의가 없거나 문서·기록이 바뀌었으면 공유 URL을 허용하지 않는다.
+
+운동은 전송·보관 과정에서 true·false·nil을 구분한다. 구형 JSON·payload에 운동 키가 없으면 nil로 처리해 ‘운동하지 않음’으로 오분류하지 않는다.
 
 ## 7 자료 사전
 
-| 자료 | 필드 | 의미와 제약 |
+| 자료 | 필드 | 의미·제약 |
 |---|---|---|
-| SleepNight | id·date Date, startDate·endDate 선택 Date, 총·단계 분 Int | 기상일 합계와 첫 수면·마지막 기상 구간. 총 시간은 네 단계의 합. |
-| 수면 단계 상태 | hasDeepStageData, hasRemStageData, hasCoreStageData, isSample은 Bool | 단계 미제공과 0분을 구분한다. 샘플 여부는 모든 분석에서 보존한다. |
-| CheckIn | id UUID, date Date, mood String, stress String, caffeine Bool, source String | 출처 iPhone 또는 Apple Watch. 같은 UUID는 한 번만 반영하고 최근 30건 유지. |
-| CheckInMessage | id UUID, timestamp Double, mood, stress, caffeine | payload는 UUID 문자열. 구형 단일 항목은 변환하고 생성한 UUID를 즉시 보관. |
-| PlanEvent | id UUID, title String, time Date | 제목 앞뒤 공백 제거. 빈 제목 저장 거부. |
-| 목표 설정 | wakeMinutes Int, sleepGoalMinutes Int | 기본 420분과 480분. 화면의 수면 목표는 360에서 600분, 15분 간격. |
-| AnswerCard | text String, evidence String | 계산 결과와 근거. 영속 저장하지 않음. |
-| ReportSummary | nights, checkIns, source, periodStart, generatedAt | 오늘 포함 최근 7개 달력 날짜. 수면 없는 날짜를 0분으로 채워 평균에 넣지 않음. |
+| SleepNight | id·date, 선택 startDate·endDate, 총·단계 분, 단계 제공 Bool, isSample | 기상일 합산. 미제공과 0분 구분. 샘플 표시 보존. |
+| CheckIn | id UUID, date, mood, stress, caffeine Bool, exercise Bool?, source | 운동 미기록 nil. 폰·Watch 출처와 원래 시각 보존. |
+| CheckInMessage | id UUID, timestamp Double, mood, stress, caffeine, exercise Bool? | UUID 문자열 payload, 구형 운동 누락 nil. |
+| PlanEvent | id UUID, title, time Date, endTime Date | 비어 있는 제목 거부. 구형 종료는 시작+1시간으로 보완·안내. |
+| 목표·화면 날짜 | wakeMinutes, sleepGoalMinutes; wakeDate | 저장 기본 420·480분. 화면 기상일 기본 내일, 목표 360~600분. |
+| PlanRecommendation | 기본·제안 취침, 기상, 충돌 목록, 확보·부족 분, 목표 유지 대안 기상 | 여러 충돌의 최종 종료+30분. 확보 분은 0 미만 불가. |
+| AnswerCard | text, evidence | 결과·평균·차이·일수·날짜·출처와 계산 한계. 영속 저장 없음. |
+| ReportSummary | nights, checkIns, source, periodStart, generatedAt | 오늘 포함 최근 7개 달력 날짜. 기록 없는 날을 0분 평균에 넣지 않음. |
+| ReportExportOptions | 날짜, 총 수면·평균, 단계, checkInFields | 기본 총 수면·평균만, 나머지 제외. 무선택 생성 차단. |
+| ExportReport | 선택 labels, source, sleepRows, checkInRows, 선택 average, includesCheckIns | 미선택 날짜·필드 제외. 체크인 미선택 시 개수도 제외, 시각은 날짜까지만. |
+| ReportDocument | UUID, options, ExportReport, 생성 스냅샷, URL | 현재 기록·선택과 일치하는 미리보기만 승인. 원본 스냅샷은 유효성 비교용 메모리 상태. |
 
-| 저장소 | 키 또는 위치 | 보관 규칙 |
+PlanRecommendation의 설명용 필드 이름은 구현 역할을 요약한 것이다. 실제 Swift 선언의 기준은 PlanStore.swift와 ReportExportStore.swift다.
+
+## 8 저장소와 호환 규칙
+
+| 저장소 | 키·위치 | 보관·호환 규칙 |
 |---|---|---|
-| D1 수면 상태 | SleepStore.nights 메모리 | 실제 조회 또는 샘플로 갱신. 수면 원본은 UserDefaults에 저장하지 않음. |
-| D2 체크인 | jammanbo.checkins.v1 | JSON, 기록 시각 내림차순 최근 30건. 수정·삭제 후에도 저장. |
-| D2 수신 이력 | jammanbo.checkinReceipts.v1 | 수신 UUID 최대 1,000개. 재전송이 수정·삭제한 기록을 되돌리지 않도록 함. |
-| 연결 의사 | jammanbo.health.connectionRequested.v1 | 사용자가 건강 연결을 요청한 사실만 보관. 권한 허용 여부는 단정하지 않음. |
-| D3 목표 | jammanbo.targetWakeMinutes, jammanbo.targetSleepMinutes | 정수 분 단위, 기존 저장 키 유지 |
-| D3 일정 | jammanbo.planEvents.v1 | PlanEvent JSON 목록, 추가와 삭제 때 저장 |
-| D4 Watch 대기열 | jammanbo.watch.pendingCheckIn.v1 | 최대 30건, iPhone 확인 응답 후 제거. 가득 차면 새 저장을 거부하고 안내. |
-| PDF 출력 | 앱 임시 디렉터리, UUID를 포함한 파일명 | 생성 때 자체 PDF 중 24시간 지난 파일 정리. 공유는 사용자 선택. |
+| D1 수면 | SleepStore.nights 메모리 | 실제·샘플 조회로 갱신. UserDefaults에 건강 원본 저장 안 함. |
+| D2 체크인 | jammanbo.checkins.v1 | JSON, 시각 내림차순 최근 30건. 수정·삭제 저장. 구형 운동 누락 nil. |
+| D2 수신 이력 | jammanbo.checkinReceipts.v1 | UUID 최대 1,000개. 재전송으로 수정·삭제가 되돌아가지 않도록 함. |
+| 건강 연결 의사 | jammanbo.health.connectionRequested.v1 | 연결 요청 사실만 저장. 읽기 권한 허용을 단정하지 않음. |
+| D3 목표 | jammanbo.targetWakeMinutes / jammanbo.targetSleepMinutes | 기존 정수 분 키 유지. 화면의 기상 날짜는 일시 선택. |
+| D3 일정 | jammanbo.planEvents.v1 | 시작·종료 JSON. 종료 없는 구형 항목은 1시간 보완, 추가·삭제 저장. |
+| D4 Watch 큐 | jammanbo.watch.pendingCheckIn.v1 | 최대 30건, 폰 확인 후 제거. 가득 차면 신규 저장 거부·안내. |
+| PDF | 앱 임시 디렉터리의 UUID 파일 | 생성 시 자체 파일 중 24시간 지난 것 정리. 선택값만 렌더링. |
+| 선택·동의 | ReportExportFlow·Store 메모리 | 초기 미동의, 기록·선택·문서 변경 시 무효화. 시트 개방 즉시 동의 초기화. 영구 동의 저장 없음. |
 
-## 8 소단위 명세 수면과 체크인
+UserDefaults는 전용 암호화 건강 저장소가 아니다. 상용 배포 전 보관·보호·삭제 정책을 검토한다. 현재 서버·LLM 전송과 외부 의료진 직접 전송 API는 없다.
+
+## 9 소단위 명세: 수면과 체크인
 
 ### MS01 수면 정규화
 
-입력은 최근 14일 HealthKit sleepAnalysis 샘플이다. SleepNormalizer는 구간 경계를 나누고 각 고유 시간 구간에 하나의 기록만 선택한다. 상세 단계가 미분류보다 우선하고, 그다음 Watch 출처를 우선한다. 같은 조건이면 출처 식별자 순으로 결정하며 같은 출처의 겹침에서는 awake를 우선한다. 잘못된 구간은 제외하고 미래 종료는 현재 시각까지 자른다.
+최근 14일 HealthKit sleepAnalysis 샘플의 구간 경계를 나누고 각 시간 구간에 하나의 기록만 선택한다. 상세 단계가 미분류보다, 그다음 Watch 출처가 우선한다. 같은 조건은 출처 식별자 순으로 결정하고 같은 출처 겹침은 awake가 우선한다. 잘못된 구간은 제외하고 미래 종료는 현재 시각까지 자른다.
 
-인접 수면의 간격이 90분 이내이거나 하나의 inBed 구간 안에 있으면 같은 세션으로 묶는다. 세션 전체를 마지막 수면 종료의 로컬 기상일에 배정하고, 같은 날 끝난 낮잠과 세션은 합산한다. 이 90분은 앱의 분류 정책이다. awake와 inBed는 수면 합계에 넣지 않는다. 초 단위로 먼저 누적한 뒤 정수 분으로 표시하고 나머지를 단계에 배분해 합계가 일치하도록 한다.
+인접 수면 간격이 90분 이내이거나 같은 inBed 구간이면 세션으로 묶는다. 세션의 마지막 수면 종료일을 로컬 기상일로 배정하고 같은 날의 세션·낮잠을 합산한다. 90분은 앱의 분류 정책이다. awake·inBed는 수면 합계에서 제외한다. 초로 누적한 뒤 분으로 표시하고 단계 합계와 총 시간을 일치시킨다.
 
-총 시간이 0인 날짜를 제외하고 날짜 내림차순으로 정렬한다. 화면에는 오늘 포함 최근 7개 달력 날짜만 남긴다. 읽을 수 있는 기록이 없거나 조회에 실패하면 샘플 목록과 출처, 안내 문구를 함께 갱신한다. 빈 응답만으로 사용자가 읽기 권한을 거부했다고 단정하지 않는다.
+총 시간 0인 날짜를 제외하고 오늘 포함 최근 7개 날짜만 표시한다. 조회 실패·빈 응답은 샘플·출처·안내를 함께 갱신하며 권한 거부라고 단정하지 않는다. 단계 미제공과 0분은 구분한다. 최초 권한 요청은 연결 버튼에서, 이후 실행·복귀·새로고침·observer 변경 때 재조회한다.
 
-단계가 없는 날짜는 단계 미제공으로 표시한다. 사용자가 한 번 연결을 요청했다면 다음 실행·앱 복귀·수동 새로고침 때 다시 조회한다. 실행 중 HealthKit 변경은 observer query로 반영한다. 최초 권한 요청은 연결 버튼에서만 시작한다. 최근 7일 전체 목록과 날짜별 단계·시작·종료·같은 날짜 체크인 상세를 제공한다.
+### MS02 체크인·운동·Watch 전달
 
-### MS02 체크인 저장과 Watch 전달
+폰은 새 UUID·현재 시각으로 체크인을 저장한다. 운동은 있음·없음·미기록 중 선택하고 구형 데이터의 운동 누락을 nil로 읽는다. Watch도 같은 선택 값을 payload와 로컬 대기열에 보관한다. 생성 UUID를 유지하며 최대 30건까지 큐에 넣고, 가득 차면 신규 저장을 거부한다.
 
-iPhone 입력은 새 UUID와 입력 시각으로 CheckIn을 만들고 출처를 iPhone으로 설정한다. Watch는 고정 UUID를 가진 항목을 UserDefaults 대기열에 먼저 보관한다. 최대 30건이며 가득 차면 새 입력을 거부하고 재시도 안내를 표시한다. WCSession 활성화와 동반 앱 설치를 확인한 뒤 transferUserInfo로 예약한다. 예약·운송 성공만으로 대기열을 지우지 않는다.
+폰은 UUID·유효 시각·각 필드 타입을 검증하고 최근 30건을 시각순 저장한다. 수신 UUID 최대 1,000개로 중복 제거 후 확인 응답을 보낸다. 운동 키가 없으면 nil이며 false로 대체하지 않는다. 편집·삭제는 원래 시각·출처를 유지하고 운동 선택도 반영한다.
 
-iPhone은 UUID, 유효한 시각, mood·stress·caffeine 타입을 검사한다. 기록 시각 내림차순으로 정렬한 최근 30건을 보관하고, 수신 UUID 이력 1,000개로 중복을 제거한다. 저장 또는 중복 확인 후 같은 UUID의 확인 응답을 보낸다. 구형 payload는 ID가 없을 때만 UUID를 생성하며 기록 시각은 필요하다. 전체 목록에서 상세를 열어 값 수정과 삭제를 수행할 수 있다. 원래 기록 시각·출처는 유지한다.
+Watch는 폰 확인 후 해당 UUID만 제거한다. 오류 재시도는 5~300초, 운송 성공 후 확인이 없으면 60초 뒤 재시도한다. 운송 중 UUID는 중복 예약하지 않는다. 앱 복귀·연결 변경·수동 재시도·백그라운드 전달을 처리한다. 실제 Watch 운동 전달과 재연결은 페어링 기기에서 추가 검증한다.
 
-Watch는 확인 응답을 받으면 해당 UUID만 대기열에서 제거하고 마지막 확인 시각을 표시한다. 전송 오류는 5초부터 최대 300초까지 간격을 늘려 재시도하며 운송 성공 후 확인 응답이 없으면 60초 뒤 재시도한다. 이미 시스템에서 운송 중인 UUID는 중복 예약하지 않는다. 앱 복귀·연결 변경·수동 재시도와 WatchConnectivity 백그라운드 전달을 처리한다. 수신 UUID 이력이 남은 동안 재전송은 iPhone에서 수정·삭제한 값을 되돌리지 않는다. 실제 전달·오프라인 재연결은 페어링된 기기에서 검증해야 한다.
+## 10 소단위 명세: 질문과 일정
 
-## 9 소단위 명세 질문과 계획
+### MS03 표현 변형·비교 근거
 
-### MS03 기록 질문과 생활습관 비교
+AnalysisService는 대소문자·문자 폭·공백·문장부호를 정리하고 평균, 단계, 습관 질문을 분류한다. 운동·산책·러닝·달리기·조깅·헬스·요가·exercise·workout·running은 운동 여부 비교로, 커피·카페인은 카페인, 긴장·스트레스는 스트레스로 분류한다. 여러 습관이면 하나를 고르도록 안내한다. 운동 종류·강도별 비교나 임의 질문의 자유 추론은 하지 않는다.
 
-AskView는 질문과 ReportSummary를 AnalysisService에 전달한다. 앞뒤 공백을 지우고 소문자로 변환한다. 빈 질문, 수면 기록 없음, 지원하지 않는 질문은 각각 안내를 반환한다. 평균 질문은 존재하는 수면 기록만 평균하고 사용한 날짜와 출처를 표시한다.
+평균은 존재하는 수면 날짜만, 단계는 해당 값이 제공된 최근 기록을 사용한다. 습관 비교는 샘플 수면을 제외하고 같은 기상 날짜의 최신 체크인 한 건을 결합한다. 운동 nil은 제외한다. 운동 있음/없음, 카페인 있음/없음, 높은 스트레스/나머지를 각 2일 이상 확보해야 두 평균과 차이를 계산한다.
 
-수면 단계 질문은 최근 7일 안에서 해당 단계가 제공된 가장 최근 기록을 사용한다. 단계가 없으면 0분으로 해석하지 않고 미제공을 알린다. 생활습관 비교는 샘플 수면을 포함하면 계산하지 않는다. 실제 수면에 대해서만 같은 날짜의 체크인을 결합하며 하루 여러 체크인 중 가장 늦게 입력한 한 건을 사용한다.
+조건별 평균·차이·일수·날짜·출처, 미기록 제외와 비교 기준을 보여준다. 2일은 계산 최소치이며 유의성 판단 기준이 아니다. 인과·임상 효과·‘의미 있는 변화’를 단정하지 않는다. 부족하면 그룹 일수·날짜와 기록 필요를 안내한다. AskView는 기록 내용 변경 시 답변을 갱신한다.
 
-카페인 있음과 없음 또는 높은 스트레스와 나머지 조건에 각각 최소 2일이 있어야 평균 차이를 계산한다. 부족하면 각 조건의 기록 수와 날짜를 근거로 보여준다. 차이가 0이면 차이 없음을 표시한다. 같은 날짜의 관찰 비교이며 전날 습관의 영향, 인과관계 또는 임상 효과로 해석하지 않는다.
+### MS04 기상 날짜·일정 종료·취침 제안
 
-### MS04 목표와 일정
+기상 날짜는 기본 내일이며 목표는 기본 07:00·480분이다. 수면 목표는 360~600분·15분 간격. 기본 취침은 선택 기상 날짜·시각에서 목표 분을 뺀다. 일정은 제목·시작·기간을 입력하고 종료를 표시한다. 구형 종료 누락은 시작+1시간으로 읽고 사용자에게 보완 사실을 알린다.
 
-PlanStore는 기존 UserDefaults 키에서 기상 분, 수면 목표 분과 일정을 읽는다. 기본 목표는 07:00 기상과 480분 수면이다. 화면에서 수면 목표는 360에서 600분 범위의 15분 간격으로 변경한다. 취침 목표는 해당 날짜의 기상 시각에서 목표 수면 분을 차감한다.
+기상 전 시작하고 종료+30분이 기본 취침보다 늦은 일정을 충돌로 본다. 제안은 기본 취침과 충돌 일정의 최종 종료+30분 중 늦은 시각이다. 목표 자체를 변경하지 않고 확보 시간·부족 시간과 목표 유지 대안 기상을 표시한다. 기상 전 수면이 불가능하면 확보를 0으로 제한하고 조정을 안내한다.
 
-07:00과 480분은 전날 23:00을 반환한다. 이 값은 목표 시각이며 미래 알람이나 주간 최적화 결과가 아니다. 일정은 제목의 공백을 지우고 비어 있지 않을 때만 추가한다. 추가와 삭제 후 JSON을 저장한다. 일정은 목록에 표시되며 취침 목표 계산에 자동 반영되지 않는다.
+다음 날 07:00·8시간, 22:00~00:00 일정 → 기본 23:00, 제안 00:30, 확보 6시간 30분, 부족 1시간 30분, 대안 기상 08:30. 충돌 삭제 시 기본 제안으로 복귀한다. 외부 캘린더나 주간 최적화는 없다.
 
-## 10 소단위 명세 요약과 품질 경계
+## 11 소단위 명세: 선택 PDF와 최종 동의
 
-### MS05 요약과 PDF
+### MS05 선택·투영·미리보기
 
-SummaryView는 ReportSummary로 화면을 구성하고 같은 값을 ReportPDFGenerator에 전달한다. 기간은 오늘 포함 최근 7개 달력 날짜이며 체크인도 같은 기간으로 제한한다. 평균은 존재하는 수면 일수로 나눈다. PDF는 595×842 포인트 한 페이지에 생성일, 날짜 범위, 평균, 기록 일수, 체크인 수, 수면 출처와 날짜별 단계를 표시한다.
+SummaryView에서 ‘공유할 데이터 선택’으로 ReportExportFlow를 연다. 최근 7일 중 날짜, 총 수면·평균, 단계, 기분·스트레스·카페인·운동을 각각 선택한다. 기본은 총 수면·평균만, 단계·체크인은 제외한다. 무선택 생성은 막는다.
 
-단계가 없으면 미제공으로 표시하고 미분류 분은 별도로 출력한다. UUID가 포함된 이름으로 앱 임시 디렉터리에 원자적으로 저장한다. 생성 직전의 ReportContent와 PDF를 함께 보관하고 앱 내부 PDFKit 미리보기에 생성 시각·출처·공유 버튼을 표시한다. 기록·출처·기간이 바뀌면 기존 PDF와 공유 버튼을 무효화하며 직접 공유할 때도 현재 값으로 다시 생성한다. 생성 시 자체 임시 PDF 중 24시간 지난 파일만 정리한다. 공유 대상은 사용자가 시스템 시트에서 선택한다. 진단서나 치료 지시로 표현하지 않는다.
+ReportSummary.export(options:)는 선택 날짜·필드만 담은 ExportReport를 생성한다. PDF 생성기에 원본 ReportSummary를 넘기지 않는다. 미선택 날짜·값은 출력 입력에서 제외하고 체크인 미선택 시 체크인 개수도 제외한다. 체크인 시각은 날짜까지만 표시한다. 선택 수면 기록만 평균하고 단계 미제공과 0분을 구분하며 출처·기간을 명시한다.
 
-| 결정 | 구현과 남은 검증 |
+UIKit ReportPDFGenerator는 A4 595×842 포인트에 행과 페이지 공간을 계산해 필요한 만큼 새 페이지를 만든다. 선택 30건도 마지막 행까지 포함하며 ‘1페이지’ 고정 제약은 없다. 앱 임시 디렉터리에 UUID 이름으로 원자 저장하고 PDFKit에서 ‘선택한 PDF 확인’을 제공한다.
+
+### MS06 최종 동의·현재 문서 승인
+
+미리보기의 최종 동의는 처음에 체크되지 않는다. ‘동의하고 공유 대상 선택’은 사용자가 동의한 뒤에만 활성화한다. ReportExportStore.authorizeSharing는 명시적 동의, 미리보기 문서 UUID, 현재 ReportContent 스냅샷을 검사한다. 선택 변경은 문서를 재준비하고 기록 변경은 synchronize로 무효화한다. 오래된 PDF URL은 승인하지 않는다.
+
+공유 시트 개방 즉시 동의를 초기화한다. 취소 후 재시도도 새 동의가 필요하다. 실제 수신자·앱·전송 여부는 사용자가 시스템 시트에서 선택한다. 자동 전송·ShareLink 우회·의료진 직접 전송 API는 없다. 사용자 기록과 목표는 공유 취소로 바뀌지 않는다.
+
+동의는 현재 선택 문서에만 적용된다. 최종 확인 이전 단계에서 앱 서버나 외부 서비스로 자료를 전송하지 않는다. 진단서나 치료 지시로 표현하지 않는다.
+
+## 12 피드백 추적·검증 결과·남은 확인
+
+| 피드백 | 반영 설계 | 연결·재시험 |
+|---|---|---|
+| P03 근거 신뢰·질문 표현·운동 없음 | 선택 운동과 nil 호환, 동의어 분류, 각 2일·최신 결합, 기준·평균·차이·일수·날짜·출처 | MS02·03, FR-03·05·06·07, T2·T3 |
+| P05 일정과 취침 분리 | 종료 시각·자정·준비 30분·복수 충돌·부족 시간·대안 기상 | MS04, FR-08~10, T4 |
+| P05 선택·최종 동의 필요 | 선택 투영·다중 페이지·문서 유효성 검사·매 시도 동의·취소 초기화 | MS05·06, FR-11·12·NFR-04, T5 |
+
+| 확인 항목 | 2026-11-08 결과 |
 |---|---|
-| 기기 내 처리 | 건강 기록을 앱 서버나 LLM으로 전송하지 않음. 향후 연동 때 별도 전송 범위 설계. |
-| 로컬 저장 | UserDefaults는 전용 암호화 건강 저장소가 아님. 상용 배포 전에 보호와 삭제 정책 검토. |
-| 분리된 계산 | 정규화·기록 저장·전송 큐·분석·계획·PDF 스냅샷을 UI 없이 검증. 자동 검사 61개 통과. |
-| 계획 저장 | PlanStore에 UserDefaults 주입 가능. 기존 키를 유지해 기존 목표와 일정 호환. |
-| 실기기 확인 | HealthKit 기록과 단계, 겹치는 출처, Watch 재연결과 전달, PDF 공유를 기기에서 검증. |
-| 사용자 검증 | 동의한 실제 참여자의 과업 성공, 시간, 도움과 의견을 수집. 결과를 추정해 채우지 않음. |
+| 도메인 회귀 검사 | 105개 통과. 구형 운동 nil, 표현 변형, 자료 부족, 자정·여러 일정, 선택 투영·동의·오래된 문서 차단 포함. |
+| 빌드 | iPhone·임베드 Watch 기기용 서명 없는 빌드와 시뮬레이터용 빌드 성공. 설치·서명·실기기 전달 검증과 구분. |
+| iPhone 시뮬레이터 | 운동 입력·P03 문구·workout 인식, 기준 안내, 합성 자정 일정의 00:30·6시간 30분·08:30, 선택 운동만 PDF, 동의 전 차단·시트 취소·재동의 확인. |
+| 실제 UIKit PDF 생성기 | 합성 30건으로 최소 선택 1페이지·운동만 2페이지·전체 3페이지. 제외값 부재·마지막 행 포함, 전체 6페이지 한글·경계 시각 확인. |
+| 남은 실제 검증 | 실제 HealthKit 기록·단계, Watch 운동 전달·오프라인 재연결, 실제 기기 공유, P03·P05 개선 후 과업 재시험. |
 
-참고 기준은 Jammanbo_SSAD_Application_Structure.docx의 구조적 분석과 설계 항목이다. 최신 구현 명세는 이 문서와 03_Jammanbo_SSAD.docx에 통합했다. 참고 문서는 제공받은 원본 상태로 보존한다.
+자동 검사와 합성 데이터 검증은 고객 재시험 결과가 아니다. 실제 참여자의 성공·시간·도움·의견을 별도 수집하며 결과를 추정해 채우지 않는다. 세부 개발 검증 기록은 docs/qa/Feedback_P03_P05_2026-11-08.md에 있다.
+
+제공받은 Jammanbo_SSAD_Application_Structure.docx는 참고 원본으로 보존한다. 최신 제출 설계는 이 문서와 03_Jammanbo_SSAD.docx v1.4다.

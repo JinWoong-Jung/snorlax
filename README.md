@@ -30,22 +30,22 @@ JammanboWatchApp → WatchHomeView → WatchSessionStore
 
 [애플리케이션 구조](docs/architecture/Application_Structure.md)에 DFD, 모듈 구조도, 자료 사전, Mini-Spec과 FR-01~12 코드 추적표를 정리했습니다. SSAD 보완 문서의 내용을 최신 구현과 대조해 제출용 SSAD에 통합했습니다.
 
-2026-11-08 P03·P05의 [피드백 수정과 검증](docs/qa/Feedback_P03_P05_2026-11-08.md)을 반영했습니다. 아래 제출 문서·영상은 11월 7일 동작을 담은 기존 자료이며, 새 운동·일정 조정·선택 공유 흐름에 맞춘 재출력·장면 갱신이 필요합니다.
+2026-11-08 P03·P05의 [피드백 수정과 검증](docs/qa/Feedback_P03_P05_2026-11-08.md)을 반영했습니다. 01 SSRD·02 UI/UX·03 SSAD의 원본과 제출 PDF를 v1.4로 재생성했습니다. [문서 개정 내역과 재생성 방법](docs/submission/Submission_Document_Update_2026-11-08.md)을 참고하세요. 기존 60초 영상은 11월 7일 화면이므로 운동·일정 조정·선택 공유 장면 갱신이 필요합니다.
 
 ## 문서와 제출물
 
 | 구분 | 편집 원본 | 제출 또는 공유 파일 |
 |---|---|---|
 | SSRD 요구사항 | [01_Jammanbo_SSRD.docx](01_Jammanbo_SSRD.docx), [요구사항 텍스트](docs/requirements/SSRD.md) | [SSRD PDF](output/pdf/01_Jammanbo_SSRD.pdf) |
-| UI/UX 기획안 | [02_Jammanbo_UIUX.pptx](02_Jammanbo_UIUX.pptx), 동일 내용의 [v5 원본](output/pptx/02_Jammanbo_UIUX_v5.pptx) | [UI/UX PDF](output/pdf/02_Jammanbo_UIUX.pdf) |
+| UI/UX 기획안 | [02_Jammanbo_UIUX.pptx](02_Jammanbo_UIUX.pptx), 동일 내용의 [v6 원본](output/pptx/02_Jammanbo_UIUX_v6.pptx) | [UI/UX PDF](output/pdf/02_Jammanbo_UIUX.pdf) |
 | SSAD 구조 명세 | [03_Jammanbo_SSAD.docx](03_Jammanbo_SSAD.docx), [GitHub 열람용 구조 문서](docs/architecture/Application_Structure.md) | [SSAD PDF](output/pdf/03_Jammanbo_SSAD.pdf) |
 | 고객 검증 계획과 빈 기록 양식 | [05_Jammanbo_Customer_Validation.docx](05_Jammanbo_Customer_Validation.docx) | [테스트 패킷](docs/user-test/Customer_Test_Packet.md) |
-| 시연 영상 | [1분 대본과 촬영 절차](docs/submission/One_Minute_Demo_Script.md) | 60초 로컬 영상 제작 완료 · YouTube 업로드·링크 기록 필요 |
+| 시연 영상 | [1분 대본과 촬영 절차](docs/submission/One_Minute_Demo_Script.md) | 기존 60초 영상 있음 · 피드백 반영 화면 재촬영 및 YouTube 링크 기록 필요 |
 | 코드 검토 | [SSAD 반영 내역과 검증 상태](docs/qa/SSAD_Alignment_Review.md) | [다른 AI 에이전트용 검토 안내](docs/qa/AI_Review_Guide.md) |
 
 SSRD는 무엇을 만들고 검수할지, UI/UX 기획안은 화면과 사용자 흐름을, SSAD는 데이터·모듈·외부 시스템의 관계와 내부 규칙을 설명합니다. 과제에 언급된 MBOX 원본은 저장소에서 확인되지 않아 `9주차/`의 UI/UX·MBASE 예시를 참고합니다. MBOX의 약어 풀이는 확정하지 않았습니다.
 
-제공받은 `Jammanbo_SSAD_Application_Structure.docx`는 참고 원본으로 보존했습니다. 최신 구조는 통합 SSAD와 Markdown을 기준으로 확인합니다. `output/pptx/02_Jammanbo_UIUX_v4.pptx`와 `docs/archive/slides_v1.ndjson`, `04_Jammanbo_Prototype.html`은 이전 기획 참고본입니다. `9주차/`는 수업 참고자료로 Git에서 제외합니다.
+제공받은 `Jammanbo_SSAD_Application_Structure.docx`는 참고 원본으로 보존했습니다. 최신 구조는 통합 SSAD와 Markdown을 기준으로 확인합니다. `output/pptx/02_Jammanbo_UIUX_v4.pptx`·`output/pptx/02_Jammanbo_UIUX_v5.pptx`와 `docs/archive/slides_v1.ndjson`, `04_Jammanbo_Prototype.html`은 이전 기획 참고본입니다. `9주차/`는 수업 참고자료로 Git에서 제외합니다.
 
 ## 실행과 검증
 

@@ -25,13 +25,13 @@ cat > "$render_dir/fonts.conf" <<CONF
 </fontconfig>
 CONF
 export FONTCONFIG_FILE="$render_dir/fonts.conf"
-for doc in 01_Jammanbo_SSRD 03_Jammanbo_SSAD 05_Jammanbo_Customer_Validation; do
+for doc in 01_Jammanbo_SSRD 03_Jammanbo_SSAD; do
   "$artifact_python" "$artifact_render" "$doc.docx" --output_dir "$render_dir/$doc" --emit_pdf --dpi 110
   case "$doc" in
     01*|03*) cp "$render_dir/$doc/$doc.pdf" "output/pdf/$doc.pdf" ;;
   esac
 done
-"$artifact_soffice" "-env:UserInstallation=file://$render_dir/lo-deck" --headless --convert-to pdf --outdir "$render_dir" output/pptx/02_Jammanbo_UIUX_v5.pptx
-cp "$render_dir/02_Jammanbo_UIUX_v5.pdf" output/pdf/02_Jammanbo_UIUX.pdf
-"$artifact_runtime/dependencies/bin/override/pdftoppm" -r 85 -png "$render_dir/02_Jammanbo_UIUX_v5.pdf" "$render_dir/slide" >/dev/null 2>&1
+"$artifact_soffice" "-env:UserInstallation=file://$render_dir/lo-deck" --headless --convert-to pdf --outdir "$render_dir" output/pptx/02_Jammanbo_UIUX_v6.pptx
+cp "$render_dir/02_Jammanbo_UIUX_v6.pdf" output/pdf/02_Jammanbo_UIUX.pdf
+"$artifact_runtime/dependencies/bin/override/pdftoppm" -r 85 -png "$render_dir/02_Jammanbo_UIUX_v6.pdf" "$render_dir/slide" >/dev/null 2>&1
 printf 'Inspect all page PNGs before delivery: %s\n' "$render_dir"

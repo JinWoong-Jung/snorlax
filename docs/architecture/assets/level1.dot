@@ -7,14 +7,14 @@ digraph G {
  watch [label="Watch 입력", fillcolor="#FFFFFF", color="#8C9AAA"];
  p1 [label="P1 수면 수집\n정규화"];
  p2 [label="P2 체크인\n관리"];
- p5 [label="P5 목표와\n일정 관리"];
+ p5 [label="P5 종료 일정\n취침 재계산"];
  d1 [label="D1 수면 상태\n메모리", shape=cylinder, fillcolor="#F0EEFA", color="#8C80B0"];
  d2 [label="D2 체크인\nUserDefaults", shape=cylinder, fillcolor="#F0EEFA", color="#8C80B0"];
  d3 [label="D3 목표와 일정\nUserDefaults", shape=cylinder, fillcolor="#F0EEFA", color="#8C80B0"];
  d4 [label="D4 Watch 대기열\niPhone 확인 전", shape=cylinder, fillcolor="#F0EEFA", color="#8C80B0"];
  p3 [label="P3 대시보드\n조회"];
  p4 [label="P4 기록 질문\n생활습관 비교"];
- p6 [label="P6 최근 요약\nPDF 생성"];
+ p6 [label="P6 선택 PDF\n미리보기 · 동의"];
  result [label="사용자\n화면과 답변", fillcolor="#FFFFFF", color="#8C9AAA"];
  pdf [label="사용자가 선택한\n외부 공유 대상", fillcolor="#FFFFFF", color="#8C9AAA"];
  health -> p1 [label="F1 샘플"];
@@ -32,7 +32,9 @@ digraph G {
  phone -> p4 [label="F5 질문", constraint=false];
  p3 -> result [label="대시보드"]; p4 -> result [label="F6 답변·근거"];
  p5 -> result [label="취침 목표", constraint=false];
- p6 -> pdf [label="사용자 선택 후 PDF"];
+ phone -> p6 [label="F8 선택 · F9 동의", constraint=false];
+ p6 -> result [label="선택 PDF 확인"];
+ p6 -> pdf [label="최종 동의 후 선택 PDF"];
  {rank=same; health; phone; watch;}
  {rank=same; p1; p2; p5;}
  {rank=same; d1; d2; d3;}

@@ -1,6 +1,6 @@
 # SSAD 반영 내역과 검증 상태
 
-> 이 문서는 후속 수정 전 기록입니다. 최신 구현과 검증은 [기능 구현 보고서](Functional_Implementation_2026-11-07.md)를 확인하세요.
+> 이 문서는 2026-11-07 당시의 검토 기록입니다. 최신 구현은 [P03·P05 피드백 반영](Feedback_P03_P05_2026-11-08.md), 제출 문서와 재생성 방법은 [v1.4 개정 내역](../submission/Submission_Document_Update_2026-11-08.md)을 확인하세요. 아래 검증 수치·범위·재생성 설명은 당시 기록입니다.
 
 검토일 2026-11-07. 제공받은 `Jammanbo_SSAD_Application_Structure.docx`를 현재 저장소의 Swift 코드와 대조했다. 해당 파일은 참고 원본으로 보존하고, 검토 결과를 `03_Jammanbo_SSAD.docx`, 제출 PDF와 `docs/architecture/Application_Structure.md`에 통합했다.
 

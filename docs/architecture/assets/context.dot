@@ -11,8 +11,8 @@ digraph G {
  {rank=same; health; recipient;}
  user -> system [label="질문 · 체크인 · 목표 · 일정"];
  system -> user [label="화면 · 답변과 근거 · 취침 목표"];
- watch -> system [label="기분 · 스트레스 · 카페인"];
+ watch -> system [label="기분 · 스트레스 · 카페인 · 운동"];
  system -> health [label="읽기 권한 · 조회 요청"];
  health -> system [label="수면 분석 샘플"];
- system -> recipient [label="사용자 선택 후 PDF 공유"];
+ system -> recipient [label="선택 자료 · 최종 동의 후 PDF"];
 }
