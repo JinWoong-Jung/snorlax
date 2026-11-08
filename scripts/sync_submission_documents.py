@@ -47,6 +47,7 @@ def table(d, rows):
     compact=True
     t=d.add_table(rows=1, cols=len(rows[0]));t.alignment=WD_TABLE_ALIGNMENT.CENTER;t.autofit=False
     n=len(rows[0]);widths=({2:[4.2,13.3],3:[3.2,7.5,6.8],4:[2.0,6.5,3.3,5.7],7:[1.6,1.7,2.0,1.4,1.5,2.8,6.5]}.get(n,[17.5/n]*n))
+    if rows[0][0] == '제안 구성요소': widths=[4.0,7.0,6.5]
     if rows[0][0] == '질문': widths=[14.2,3.3]
     if rows[0][0] == '요약 지표': widths=[10.5,7.0]
     for col,w in zip(t.columns,widths): col.width=Cm(w)
@@ -114,7 +115,7 @@ def from_markdown(path, output, title, page_sections=()):
 # Markdown is the reviewable text source; keep requirement IDs stable.
 req=ROOT/'docs/requirements/SSRD.md'
 from_markdown(req, ROOT/'01_Jammanbo_SSRD.docx', '잠만보 요구사항 명세서',
-    ('4 기능 요구사항: 기록과 질문','5 기능 요구사항: 계획과 공유','7 인터페이스와 데이터 규칙','9 수용 검증 시나리오'))
+    ('4 기능 요구사항: 기록과 질문','5 기능 요구사항: 계획과 공유','7 인터페이스와 데이터 규칙','9 수용 검증 시나리오','11 LLM API 연동 요구사항 설계안'))
 arch=ROOT/'docs/architecture/Application_Structure.md'
 sections=[plain(x[3:]) for x in arch.read_text().splitlines() if x.startswith('## ')][1:]
 from_markdown(arch, ROOT/'03_Jammanbo_SSAD.docx','잠만보 소프트웨어 구조와 애플리케이션 설계',sections)

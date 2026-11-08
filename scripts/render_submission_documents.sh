@@ -31,7 +31,7 @@ for doc in 01_Jammanbo_SSRD 03_Jammanbo_SSAD; do
     01*|03*) cp "$render_dir/$doc/$doc.pdf" "output/pdf/$doc.pdf" ;;
   esac
 done
-"$artifact_soffice" "-env:UserInstallation=file://$render_dir/lo-deck" --headless --convert-to pdf --outdir "$render_dir" output/pptx/02_Jammanbo_UIUX_v6.pptx
-cp "$render_dir/02_Jammanbo_UIUX_v6.pdf" output/pdf/02_Jammanbo_UIUX.pdf
-"$artifact_runtime/dependencies/bin/override/pdftoppm" -r 85 -png "$render_dir/02_Jammanbo_UIUX_v6.pdf" "$render_dir/slide" >/dev/null 2>&1
+"$artifact_soffice" "-env:UserInstallation=file://$render_dir/lo-deck" --headless --convert-to pdf --outdir "$render_dir" output/pptx/02_Jammanbo_UIUX_v7.pptx
+cp "$render_dir/02_Jammanbo_UIUX_v7.pdf" output/pdf/02_Jammanbo_UIUX.pdf
+"$artifact_runtime/dependencies/bin/override/pdftoppm" -r 85 -png "$render_dir/02_Jammanbo_UIUX_v7.pdf" "$render_dir/slide" >/dev/null 2>&1
 printf 'Inspect all page PNGs before delivery: %s\n' "$render_dir"

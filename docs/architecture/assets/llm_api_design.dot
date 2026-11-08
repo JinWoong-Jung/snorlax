@@ -1,0 +1,16 @@
+digraph G {
+ graph [rankdir=LR,bgcolor="white",pad="0.25",nodesep="0.35",ranksep="0.45",splines=polyline];
+ node [fontname="Apple SD Gothic Neo",fontsize=16,shape=box,style="rounded,filled",fillcolor="#F3F6FA",color="#8C9AAA",margin="0.18,0.12"];
+ edge [fontname="Apple SD Gothic Neo",fontsize=12,color="#637A91",style=dashed,arrowsize=0.7];
+ user [label="사용자\n질문 · 자료 선택"];
+ phone [label="iPhone 제안 모듈\n전송 미리보기 · 동의\n선택 사실 · 근거 구성",fillcolor="#E5F3EF",color="#38816C"];
+ gateway [label="중계 서버 설계\n인증 · 한도 · 공급자 키"];
+ llm [label="외부 LLM API\n설명 · 요약 초안",fillcolor="#F0EEFA",color="#8C80B0"];
+ output [label="iPhone 결과 검토\n근거 · 수치 검사\n생성 설명 표시"];
+ user -> phone [label="명시적 요청"];
+ phone -> gateway [label="동의 후 HTTPS\n최소 선택 맥락"];
+ gateway -> llm [label="공급자 요청"];
+ llm -> output [label="중계 서버를 통한 응답",constraint=false];
+ output -> user [label="확인 후 활용",constraint=false];
+ {rank=same;phone;output;}
+}

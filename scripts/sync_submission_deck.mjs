@@ -1,7 +1,7 @@
 /** Focused edits to the existing, editable UI/UX deck. Requires the Codex artifact runtime.
  * Use scripts/sync_submission_deck.sh to link the bundled runtime dependencies.
  * Usage: node sync_submission_deck.mjs SOURCE.pptx WORKSPACE
- * The validated file is written to WORKSPACE/final/02_Jammanbo_UIUX_v6.pptx.
+ * The validated file is written to WORKSPACE/final/02_Jammanbo_UIUX_v7.pptx.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -80,6 +80,31 @@ const updates={
 'sh/hcfy9k3u':'→ P03·P05의 개선 후 고객 재시험\n→ 실제 HealthKit·Watch 운동 전달 확인\n→ 외부 캘린더 연동\n→ 생성형 LLM 설명·요약\n→ 계정·보호·장기 추세\n→ 리마인더·알림',
 'sh/gb6x0zm9':'2026-11-08 v1.4 · 개발 검증 완료와 고객 재시험 전 상태를 구분한다. 화면 수치는 설명용 예시다.'
 };
+Object.assign(updates, {
+  "sh/7qp4be9c": "HealthKit 수면과 생활습관을 연결하는 iPhone + Watch 앱\nLLM API 연동 설계안 반영 · v1.5 · 2026-11-08",
+  "sh/ove9o7yd": "수면·습관 기록 + 근거 설명 + 일정 반영 + 선택 공유. LLM API로 설명·요약을 확장하는 설계안",
+  "sh/a5c3ql8z": "로컬 근거 + LLM API안",
+  "sh/6d0fytg3": "v1.5 API 설계안: 선택 자료·동의 → 중계 서버 → LLM 설명. 현재 앱·영상은 로컬 규칙 기반",
+  "sh/jadsz2xk": "• 현재 로컬 계산\n\n• 날짜·출처·기준\n\n• LLM API 설계안\n\n• 전송 확인·동의",
+  "sh/g72x4zyd": "LLM 질문과 설명 API 연동안",
+  "sh/sjix0zy1": "선택 기록에 질문",
+  "sh/98rehwve": "LLM 설명 응답 예시\n수치는 선택 기록 기준\n(API 연동 설계안)",
+  "sh/n6pwfmd8": "전송 자료 확인과 동의",
+  "sh/1k7edwv2": "선택한 맥락만 API로 전송",
+  "sh/zipwbmdc": "실패 시 로컬 결과로 복귀",
+  "sh/lgbepgvm": "제안하는 API 흐름",
+  "sh/tw7e9gnq": "질문·선택 사실 → 전송 동의 → 중계 서버\n→ LLM 설명 → 근거·수치 확인.\n현재 앱의 API 호출은 미구현·미검증이다.",
+  "sh/6twve1oz": "T6 설계: 선택·동의·근거·정상/오류 응답\n현재 로컬 T3 및 기존 고객 수치와 분리",
+  "sh/kredcr6t": "근거와 데이터 경계",
+  "sh/jq5w365o": "• 수치는 로컬 계산, LLM은 설명 작성\n• 질문·선택 기록의 전송 범위 확인\n• 외부 처리 동의와 PDF 공유 동의 분리\n• 공급자 키는 중계 서버에 보관하는 안\n• 응답 근거 ID·수치와 생성 표시 확인\n• 취소·지연·한도 오류는 별도 안내\n• 공급자·모델·배포는 미정, 실측 전",
+  "sh/xwnupgvy": "현재: 선택 → PDF 확인 → 최종 동의·대상 선택.\nAPI안: 선택 자료의 LLM 요약 초안을 검토한 뒤\nPDF에 포함하며 전송 동의는 따로 받는다.",
+  "sh/ofqtgnyt": "현재: 일정 수면 0분·무선택 PDF·취소 안내.\nAPI안: 미동의 요청 차단, 로딩·취소·오프라인,\n시간 초과·인증·한도·응답 오류를 구분한다.\n실패 시 현재 로컬 기능을 유지한다.",
+  "sh/b6d4f2lc": "• 현재 T1~T5와 API안 T6·T7 분리\n• 과업 완료율·시간·도움·오류\n• 근거 이해·생성 설명 구분\n• 외부 전송 범위·동의 이해\n• API 지연·실패·제외값 검증 계획\n• API 실제 호출·고객 재시험 전\n• 기존 6명·105개를 API 성과로 미사용",
+  "sh/bq9orito": "현재 구현과 LLM API 추가 설계",
+  "sh/1076lobm": "LLM API 설계안",
+  "sh/hcfy9k3u": "→ 선택 기록·질문과 외부 처리 동의\n→ 중계 서버를 통해 LLM API 호출\n→ 근거가 표시된 설명·요약 초안\n→ 사용자 검토 후 PDF 포함\n→ 오류 시 로컬 결과 사용\n→ 실제 연결·응답·고객 검증은 수행 전",
+  "sh/gb6x0zm9": "v1.5 · LLM API는 설계 가정이며 실제 호출 미검증. 현재 앱·영상의 질문은 로컬 규칙으로 동작한다."
+});
 for(const [id,value] of Object.entries(updates)) {
  const target=p.resolve(id);
  const old=String(target.text);
@@ -106,7 +131,7 @@ const candidatePath=path.join(workspaceDir,'build','candidate.pptx');
 await (await PresentationFile.exportPptx(p)).save(candidatePath);
 const {finalizePresentation}=await import(pathToFileURL(path.join(SKILL_DIR,'container_tools/artifact_tool_utils.mjs')).href);
 const result=await finalizePresentation({workspaceDir,candidatePath,
- finalPath:path.join(workspaceDir,'final','02_Jammanbo_UIUX_v6.pptx'),
+ finalPath:path.join(workspaceDir,'final','02_Jammanbo_UIUX_v7.pptx'),
  pythonExecutable:path.join(runtime,'dependencies/python/bin/python3.12'),
  integrityValidatorPath:path.join(SKILL_DIR,'container_tools/inspect_presentation_package_integrity.py'),
  layoutValidatorPath:path.join(SKILL_DIR,'container_tools/inspect_presentation_layout_geometry.py'),
